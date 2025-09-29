@@ -1,4 +1,5 @@
 const transcriptService = require('./transcriptService');
+const subscriptionEnforcer = require('./subscriptionEnforcer');
 const crypto = require('crypto');
 
 class MeetingPlatformService {
@@ -27,7 +28,18 @@ class MeetingPlatformService {
    * Register a new meeting session
    */
   registerMeeting(meetingData) {
-    const { meetingId, platform, title, participants, startTime } = meetingData;
+    const { meetingId, platform, title, participants, startTime, userId } = meetingData;
+
+    // Check if user can start meeting (subscription limits)
+    if (userId) {
+      const canStart = subscriptionEnforcer.canStartMeeting(userId);
+      if (!canStart.allowed) {
+        throw new Error(canStart.reason);
+      }
+
+      // Start subscription tracking
+      subscriptionEnforcer.startMeetingSession(meetingId, userId, platform);
+    }
 
     this.activeMeetings.set(meetingId, {
       meetingId,
@@ -36,7 +48,8 @@ class MeetingPlatformService {
       participants: participants || [],
       startTime: startTime || new Date().toISOString(),
       status: 'active',
-      transcriptChunks: []
+      transcriptChunks: [],
+      userId
     });
 
     return { success: true, meetingId };
@@ -50,6 +63,10 @@ class MeetingPlatformService {
     if (meeting) {
       meeting.status = 'ended';
       meeting.endTime = new Date().toISOString();
+
+      // End subscription tracking
+      subscriptionEnforcer.endMeetingSession(meetingId, 'manual');
+
       return { success: true, meeting };
     }
     return { success: false, error: 'Meeting not found' };
@@ -74,8 +91,14 @@ class MeetingPlatformService {
   /**
    * Process incoming transcript from any platform
    */
-  async processTranscript(platform, meetingId, transcriptData) {
+  async processTranscript(platform, meetingId, transcriptData, userId = null) {
     const { text, speaker, timestamp } = transcriptData;
+
+    // Check if meeting can continue (subscription limits)
+    const canContinue = subscriptionEnforcer.canMeetingContinue(meetingId);
+    if (!canContinue.allowed) {
+      throw new Error(`Meeting cannot continue: ${canContinue.reason}`);
+    }
 
     // Ensure meeting is registered
     if (!this.activeMeetings.has(meetingId)) {
@@ -83,7 +106,8 @@ class MeetingPlatformService {
         meetingId,
         platform,
         title: `${platform} Meeting`,
-        startTime: new Date().toISOString()
+        startTime: new Date().toISOString(),
+        userId
       });
     }
 

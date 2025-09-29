@@ -8,10 +8,16 @@ const cors = require('cors');
 const transcriptRouter = require('./routes/transcript');
 const companyBrainRouter = require('./routes/companyBrain');
 const integrationsRouter = require('./routes/integrations');
+const authRouter = require('./routes/auth');
+const datasourcesRouter = require('./routes/datasources');
+const subscriptionEnforcer = require('./services/subscriptionEnforcer');
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
+
+// Set WebSocket server for subscription enforcer
+subscriptionEnforcer.setWebSocketServer(wss);
 
 // Middleware
 app.use(cors());
@@ -19,9 +25,11 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // Routes
+app.use('/api/auth', authRouter);
 app.use('/api/transcript', transcriptRouter);
 app.use('/api/company-brain', companyBrainRouter);
 app.use('/api/integrations', integrationsRouter);
+app.use('/api/datasources', datasourcesRouter);
 
 // WebSocket connection handling
 wss.on('connection', (ws) => {
