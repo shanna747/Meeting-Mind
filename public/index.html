@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Mind - AI-Powered Meeting Intelligence</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Landing Page -->
+    <div id="landing-page" class="page active">
+        <header class="landing-header">
+            <nav class="navbar">
+                <div class="logo">
+                    <h1>Meeting Mind</h1>
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn-secondary" onclick="showLogin()">Login</button>
+                    <button class="btn-primary" onclick="showRegister()">Get Started</button>
+                </div>
+            </nav>
+        </header>
+
+        <main class="landing-main">
+            <section class="hero">
+                <h2>Your AI-Powered Meeting Companion</h2>
+                <p class="hero-subtitle">Never miss important details. Meeting Mind uses AI to capture insights, answer questions, and keep you informed in real-time.</p>
+                <button class="btn-cta" onclick="showRegister()">Start Free Trial</button>
+            </section>
+
+            <section class="features">
+                <div class="feature-card">
+                    <div class="feature-icon">📝</div>
+                    <h3>Real-Time Transcription</h3>
+                    <p>Automatic transcription with speaker identification</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <h3>Company Brain</h3>
+                    <p>AI answers questions using your company knowledge</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔗</div>
+                    <h3>Integrations</h3>
+                    <p>Works with Zoom, Teams, and Google Meet</p>
+                </div>
+            </section>
+        </main>
+
+        <footer class="landing-footer">
+            <p>&copy; 2025 Meeting Mind. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Login Page -->
+    <div id="login-page" class="page">
+        <div class="auth-container">
+            <div class="auth-box">
+                <h2>Welcome Back</h2>
+                <p class="auth-subtitle">Log in to your Meeting Mind account</p>
+
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" required placeholder="you@company.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn-primary btn-full">Log In</button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Don't have an account? <a href="#" onclick="showRegister()">Sign up</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Page -->
+    <div id="register-page" class="page">
+        <div class="auth-container">
+            <div class="auth-box">
+                <h2>Create Your Account</h2>
+                <p class="auth-subtitle">Choose your subscription plan</p>
+
+                <!-- Subscription Plans -->
+                <div class="subscription-plans">
+                    <div class="plan-card" onclick="selectPlan('free')">
+                        <div class="plan-header">
+                            <h3>Starter</h3>
+                            <div class="plan-price">
+                                <span class="price">FREE</span>
+                            </div>
+                        </div>
+                        <ul class="plan-features">
+                            <li>✓ 15 minutes per meeting</li>
+                            <li>✓ Basic transcription</li>
+                            <li>✓ Company Brain access</li>
+                            <li>✓ All integrations</li>
+                        </ul>
+                        <input type="radio" name="subscription" value="free" id="plan-free" checked>
+                    </div>
+
+                    <div class="plan-card" onclick="selectPlan('pro')">
+                        <div class="plan-badge">Popular</div>
+                        <div class="plan-header">
+                            <h3>Professional</h3>
+                            <div class="plan-price">
+                                <span class="price">$19</span>
+                                <span class="period">/month</span>
+                            </div>
+                        </div>
+                        <ul class="plan-features">
+                            <li>✓ 30 minutes per meeting</li>
+                            <li>✓ Advanced transcription</li>
+                            <li>✓ Company Brain access</li>
+                            <li>✓ All integrations</li>
+                            <li>✓ Priority support</li>
+                        </ul>
+                        <input type="radio" name="subscription" value="pro" id="plan-pro">
+                    </div>
+
+                    <div class="plan-card" onclick="selectPlan('business')">
+                        <div class="plan-header">
+                            <h3>Business</h3>
+                            <div class="plan-price">
+                                <span class="price">$49</span>
+                                <span class="period">/month</span>
+                            </div>
+                        </div>
+                        <ul class="plan-features">
+                            <li>✓ 60 minutes per meeting</li>
+                            <li>✓ Premium transcription</li>
+                            <li>✓ Company Brain access</li>
+                            <li>✓ All integrations</li>
+                            <li>✓ Priority support</li>
+                            <li>✓ Custom features</li>
+                        </ul>
+                        <input type="radio" name="subscription" value="business" id="plan-business">
+                    </div>
+                </div>
+
+                <form id="register-form" onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label for="register-name">Full Name</label>
+                        <input type="text" id="register-name" required placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" required placeholder="you@company.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" required placeholder="••••••••" minlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-company">Company Name (Optional)</label>
+                        <input type="text" id="register-company" placeholder="Acme Inc.">
+                    </div>
+                    <button type="submit" class="btn-primary btn-full">Create Account</button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Already have an account? <a href="#" onclick="showLogin()">Log in</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Page -->
+    <div id="dashboard-page" class="page">
+        <header class="dashboard-header">
+            <div class="dashboard-nav">
+                <div class="logo">
+                    <h2>Meeting Mind</h2>
+                </div>
+                <div class="user-menu">
+                    <span id="user-name">User</span>
+                    <button class="btn-secondary" onclick="handleLogout()">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="dashboard-main">
+            <div class="dashboard-container">
+                <section class="dashboard-welcome">
+                    <h1>Welcome to Your Dashboard</h1>
+                    <p>Connect your data sources to power your Company Brain</p>
+                </section>
+
+                <section class="connections-section">
+                    <h2>Data Source Connections</h2>
+                    <p class="section-subtitle">Connect platforms to enable AI-powered insights during meetings</p>
+
+                    <div class="connections-grid">
+                        <!-- Product Documentation -->
+                        <div class="connection-card">
+                            <div class="connection-header">
+                                <div class="connection-icon">📚</div>
+                                <h3>Product Documentation</h3>
+                            </div>
+                            <p class="connection-description">Upload or link your product docs, help articles, and technical documentation</p>
+                            <div class="connection-status disconnected">
+                                <span class="status-indicator"></span>
+                                <span>Not Connected</span>
+                            </div>
+                            <button class="btn-primary" onclick="connectDocumentation()">Connect</button>
+                        </div>
+
+                        <!-- Slack -->
+                        <div class="connection-card">
+                            <div class="connection-header">
+                                <div class="connection-icon">💬</div>
+                                <h3>Slack</h3>
+                            </div>
+                            <p class="connection-description">Access team conversations, channels, and shared knowledge from Slack</p>
+                            <div class="connection-status disconnected">
+                                <span class="status-indicator"></span>
+                                <span>Not Connected</span>
+                            </div>
+                            <button class="btn-primary" onclick="connectSlack()">Connect</button>
+                        </div>
+
+                        <!-- Google Sheets -->
+                        <div class="connection-card">
+                            <div class="connection-header">
+                                <div class="connection-icon">📊</div>
+                                <h3>Google Sheets</h3>
+                            </div>
+                            <p class="connection-description">Pull data from spreadsheets, reports, and shared documents</p>
+                            <div class="connection-status disconnected">
+                                <span class="status-indicator"></span>
+                                <span>Not Connected</span>
+                            </div>
+                            <button class="btn-primary" onclick="connectGoogleSheets()">Connect</button>
+                        </div>
+
+                        <!-- CRM -->
+                        <div class="connection-card">
+                            <div class="connection-header">
+                                <div class="connection-icon">👥</div>
+                                <h3>CRM</h3>
+                            </div>
+                            <p class="connection-description">Connect Salesforce, HubSpot, or other CRM platforms</p>
+                            <div class="connection-status disconnected">
+                                <span class="status-indicator"></span>
+                                <span>Not Connected</span>
+                            </div>
+                            <button class="btn-primary" onclick="connectCRM()">Connect</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="active-meetings-section">
+                    <h2>Active Meetings</h2>
+                    <div id="active-meetings-list" class="meetings-list">
+                        <div class="empty-state">
+                            <p>No active meetings. Start a meeting on Zoom, Teams, or Google Meet to begin.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="subscription-info">
+                    <h3>Your Subscription</h3>
+                    <div class="subscription-details">
+                        <p><strong>Plan:</strong> <span id="current-plan">Free</span></p>
+                        <p><strong>Meeting Limit:</strong> <span id="meeting-limit">15 minutes</span></p>
+                        <button class="btn-secondary" onclick="showUpgrade()">Upgrade Plan</button>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
