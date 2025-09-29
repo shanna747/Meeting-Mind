@@ -7,6 +7,7 @@ const WebSocket = require('ws');
 const cors = require('cors');
 const transcriptRouter = require('./routes/transcript');
 const companyBrainRouter = require('./routes/companyBrain');
+const integrationsRouter = require('./routes/integrations');
 
 const app = express();
 const server = http.createServer(app);
@@ -20,6 +21,7 @@ app.use(express.static('public'));
 // Routes
 app.use('/api/transcript', transcriptRouter);
 app.use('/api/company-brain', companyBrainRouter);
+app.use('/api/integrations', integrationsRouter);
 
 // WebSocket connection handling
 wss.on('connection', (ws) => {
