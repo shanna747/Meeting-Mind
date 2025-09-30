@@ -1,7 +1,54 @@
 const express = require('express');
 const router = express.Router();
 const meetingPlatformService = require('../../services/meetingPlatformService');
+const authService = require('../../services/authService');
 const axios = require('axios');
+
+// Google Meet configuration endpoint
+router.post('/configure', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const user = await authService.verifyToken(token);
+    const { projectId, clientId, clientSecret, userEmail } = req.body;
+
+    if (!projectId || !clientId || !clientSecret) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Store Google Meet configuration
+    await authService.updateDataSource(user.id, 'googleMeet', {
+      projectId,
+      clientId,
+      clientSecret,
+      userEmail,
+      platform: 'googleMeet',
+      configuredAt: new Date().toISOString()
+    });
+
+    // Generate OAuth URL
+    const redirectUri = process.env.GOOGLE_MEET_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/integrations/google-meet/auth/callback`;
+    const scopes = [
+      'https://www.googleapis.com/auth/calendar.readonly',
+      'https://www.googleapis.com/auth/meetings.space.readonly'
+    ];
+
+    const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+    authUrl.searchParams.set('client_id', clientId);
+    authUrl.searchParams.set('redirect_uri', redirectUri);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('scope', scopes.join(' '));
+    authUrl.searchParams.set('access_type', 'offline');
+
+    res.json({ success: true, authUrl: authUrl.toString() });
+  } catch (error) {
+    console.error('Google Meet configuration error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Google Meet webhook endpoint
 router.post('/webhook', async (req, res) => {
