@@ -1,6 +1,39 @@
 const express = require('express');
 const router = express.Router();
 const meetingPlatformService = require('../../services/meetingPlatformService');
+const authService = require('../../services/authService');
+
+// Zoom configuration endpoint
+router.post('/configure', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const user = await authService.verifyToken(token);
+    const { accountId, clientId, clientSecret, webhookToken } = req.body;
+
+    if (!accountId || !clientId || !clientSecret) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Store Zoom configuration in user's integrations
+    await authService.updateDataSource(user.id, 'zoom', {
+      accountId,
+      clientId,
+      clientSecret,
+      webhookToken,
+      platform: 'zoom',
+      configuredAt: new Date().toISOString()
+    });
+
+    res.json({ success: true, message: 'Zoom configured successfully' });
+  } catch (error) {
+    console.error('Zoom configuration error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Zoom webhook verification endpoint
 router.post('/webhook', async (req, res) => {

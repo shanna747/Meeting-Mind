@@ -515,16 +515,156 @@ async function submitConfluenceConfig() {
 }
 
 // Meeting platform connections
-async function connectZoom() {
-    alert('Zoom integration: Install the Meeting Mind app from the Zoom App Marketplace, then configure your webhook URL in the Zoom dashboard.\n\nWebhook URL: ' + window.location.origin + '/api/integrations/zoom/webhook');
+function connectZoom() {
+    openConnectionModal('zoom-form');
+    // Set webhook URL
+    document.getElementById('zoom-webhook-url').textContent = window.location.origin + '/api/integrations/zoom/webhook';
 }
 
-async function connectTeams() {
-    alert('Microsoft Teams integration: Go to your Azure AD portal, register the Meeting Mind app, and configure OAuth permissions.\n\nRedirect URI: ' + window.location.origin + '/api/integrations/teams/auth/callback');
+function connectTeams() {
+    openConnectionModal('teams-form');
+    // Set redirect URI
+    document.getElementById('teams-redirect-uri').textContent = window.location.origin + '/api/integrations/teams/auth/callback';
 }
 
-async function connectGoogleMeet() {
-    alert('Google Meet integration: Create a Google Cloud project, enable the Google Meet API, and configure OAuth credentials.\n\nRedirect URI: ' + window.location.origin + '/api/integrations/google-meet/auth/callback');
+function connectGoogleMeet() {
+    openConnectionModal('meet-form');
+    // Set redirect URI
+    document.getElementById('meet-redirect-uri').textContent = window.location.origin + '/api/integrations/google-meet/auth/callback';
+}
+
+// Meeting platform submit functions
+async function submitZoomConfig() {
+    const accountId = document.getElementById('zoom-account-id').value;
+    const clientId = document.getElementById('zoom-client-id').value;
+    const clientSecret = document.getElementById('zoom-client-secret').value;
+    const webhookToken = document.getElementById('zoom-webhook-token').value;
+
+    if (!accountId || !clientId || !clientSecret) {
+        alert('Please fill in all required fields');
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/integrations/zoom/configure', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                accountId,
+                clientId,
+                clientSecret,
+                webhookToken
+            })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            alert('Zoom connected successfully! You can now use Meeting Mind in your Zoom meetings.');
+            closeConnectionModal();
+            loadConnectionStatus();
+        } else {
+            alert(data.error || 'Failed to configure Zoom');
+        }
+    } catch (error) {
+        console.error('Zoom configuration error:', error);
+        alert('Failed to configure Zoom');
+    }
+}
+
+async function submitTeamsConfig() {
+    const tenantId = document.getElementById('teams-tenant-id').value;
+    const clientId = document.getElementById('teams-client-id').value;
+    const clientSecret = document.getElementById('teams-client-secret').value;
+    const userEmail = document.getElementById('teams-user-email').value;
+
+    if (!tenantId || !clientId || !clientSecret) {
+        alert('Please fill in all required fields');
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/integrations/teams/configure', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                tenantId,
+                clientId,
+                clientSecret,
+                userEmail
+            })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            if (data.authUrl) {
+                // Redirect to Microsoft OAuth
+                window.location.href = data.authUrl;
+            } else {
+                alert('Teams connected successfully!');
+                closeConnectionModal();
+                loadConnectionStatus();
+            }
+        } else {
+            alert(data.error || 'Failed to configure Teams');
+        }
+    } catch (error) {
+        console.error('Teams configuration error:', error);
+        alert('Failed to configure Teams');
+    }
+}
+
+async function submitMeetConfig() {
+    const projectId = document.getElementById('meet-project-id').value;
+    const clientId = document.getElementById('meet-client-id').value;
+    const clientSecret = document.getElementById('meet-client-secret').value;
+    const userEmail = document.getElementById('meet-user-email').value;
+
+    if (!projectId || !clientId || !clientSecret) {
+        alert('Please fill in all required fields');
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/integrations/google-meet/configure', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                projectId,
+                clientId,
+                clientSecret,
+                userEmail
+            })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            if (data.authUrl) {
+                // Redirect to Google OAuth
+                window.location.href = data.authUrl;
+            } else {
+                alert('Google Meet connected successfully!');
+                closeConnectionModal();
+                loadConnectionStatus();
+            }
+        } else {
+            alert(data.error || 'Failed to configure Google Meet');
+        }
+    } catch (error) {
+        console.error('Google Meet configuration error:', error);
+        alert('Failed to configure Google Meet');
+    }
 }
 
 function showUpgrade() {

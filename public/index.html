@@ -577,6 +577,159 @@
                     <button class="btn-primary" onclick="submitConfluenceConfig()">Authorize with Atlassian</button>
                 </div>
             </div>
+
+            <!-- Zoom Connection Form -->
+            <div id="zoom-form" class="connection-form">
+                <h2>Connect Zoom</h2>
+                <p class="form-description">Configure Meeting Mind integration with your Zoom account</p>
+
+                <div class="info-box">
+                    <h4>Setup Steps:</h4>
+                    <ul>
+                        <li>1. Create a Zoom App in the Zoom Marketplace</li>
+                        <li>2. Configure webhook subscriptions</li>
+                        <li>3. Enter your credentials below</li>
+                    </ul>
+                </div>
+
+                <div class="form-group">
+                    <label for="zoom-account-id">Zoom Account ID</label>
+                    <input type="text" id="zoom-account-id" placeholder="Your Zoom Account ID" required>
+                    <span class="field-hint">Found in your Zoom App Credentials</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="zoom-client-id">Client ID</label>
+                    <input type="text" id="zoom-client-id" placeholder="Your Zoom Client ID" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="zoom-client-secret">Client Secret</label>
+                    <input type="password" id="zoom-client-secret" placeholder="Your Zoom Client Secret" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="zoom-webhook-token">Webhook Secret Token</label>
+                    <input type="password" id="zoom-webhook-token" placeholder="Webhook verification token">
+                    <span class="field-hint">Used to verify webhook authenticity</span>
+                </div>
+
+                <div class="info-box">
+                    <h4>Webhook URL (copy to Zoom App settings):</h4>
+                    <code style="display: block; padding: 8px; background: white; border-radius: 4px; margin-top: 8px;">
+                        <span id="zoom-webhook-url"></span>
+                    </code>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
+                    <button class="btn-primary" onclick="submitZoomConfig()">Connect Zoom</button>
+                </div>
+            </div>
+
+            <!-- Microsoft Teams Connection Form -->
+            <div id="teams-form" class="connection-form">
+                <h2>Connect Microsoft Teams</h2>
+                <p class="form-description">Integrate Meeting Mind with Microsoft Teams meetings</p>
+
+                <div class="info-box">
+                    <h4>Prerequisites:</h4>
+                    <ul>
+                        <li>✓ Azure AD tenant administrator access</li>
+                        <li>✓ Ability to register applications in Azure Portal</li>
+                    </ul>
+                </div>
+
+                <div class="form-group">
+                    <label for="teams-tenant-id">Microsoft 365 Tenant ID</label>
+                    <input type="text" id="teams-tenant-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required>
+                    <span class="field-hint">Found in Azure Portal > Azure Active Directory</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="teams-client-id">Application (Client) ID</label>
+                    <input type="text" id="teams-client-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required>
+                    <span class="field-hint">From your registered Azure AD app</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="teams-client-secret">Client Secret Value</label>
+                    <input type="password" id="teams-client-secret" placeholder="Your client secret" required>
+                    <span class="field-hint">Generate in Azure Portal > Certificates & secrets</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="teams-user-email">Teams User Email</label>
+                    <input type="email" id="teams-user-email" placeholder="you@company.com">
+                    <span class="field-hint">Your Microsoft 365 work email</span>
+                </div>
+
+                <div class="info-box">
+                    <h4>Required API Permissions:</h4>
+                    <ul style="font-size: 13px;">
+                        <li>• OnlineMeetings.Read.All</li>
+                        <li>• Calendars.Read</li>
+                        <li>• User.Read</li>
+                    </ul>
+                    <p style="margin-top: 8px; font-size: 13px;">Redirect URI: <code id="teams-redirect-uri"></code></p>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
+                    <button class="btn-primary" onclick="submitTeamsConfig()">Authorize Teams</button>
+                </div>
+            </div>
+
+            <!-- Google Meet Connection Form -->
+            <div id="meet-form" class="connection-form">
+                <h2>Connect Google Meet</h2>
+                <p class="form-description">Enable Meeting Mind for your Google Meet sessions</p>
+
+                <div class="info-box">
+                    <h4>Setup Requirements:</h4>
+                    <ul>
+                        <li>✓ Google Cloud Project with Meet API enabled</li>
+                        <li>✓ OAuth 2.0 credentials configured</li>
+                    </ul>
+                </div>
+
+                <div class="form-group">
+                    <label for="meet-project-id">Google Cloud Project ID</label>
+                    <input type="text" id="meet-project-id" placeholder="your-project-id" required>
+                    <span class="field-hint">From Google Cloud Console</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="meet-client-id">OAuth Client ID</label>
+                    <input type="text" id="meet-client-id" placeholder="xxxxx.apps.googleusercontent.com" required>
+                    <span class="field-hint">From Credentials page in Google Cloud Console</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="meet-client-secret">OAuth Client Secret</label>
+                    <input type="password" id="meet-client-secret" placeholder="Your client secret" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="meet-user-email">Google Account Email</label>
+                    <input type="email" id="meet-user-email" placeholder="you@gmail.com">
+                    <span class="field-hint">Google account for authentication</span>
+                </div>
+
+                <div class="info-box">
+                    <h4>Required APIs & Scopes:</h4>
+                    <ul style="font-size: 13px;">
+                        <li>• Google Calendar API</li>
+                        <li>• Google Meet API</li>
+                    </ul>
+                    <p style="margin-top: 8px; font-size: 13px;">Authorized redirect URI: <code id="meet-redirect-uri"></code></p>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
+                    <button class="btn-primary" onclick="submitMeetConfig()">Authorize Google Meet</button>
+                </div>
+            </div>
         </div>
     </div>
 
