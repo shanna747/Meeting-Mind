@@ -136,8 +136,16 @@ function loadDashboardData() {
             'business': '60 minutes'
         };
 
-        document.getElementById('current-plan').textContent = planNames[user.subscription] || 'Free';
-        document.getElementById('meeting-limit').textContent = planLimits[user.subscription] || '15 minutes';
+        // Update both badge and old locations if they exist
+        const currentPlanBadge = document.getElementById('current-plan-badge');
+        const meetingLimitBadge = document.getElementById('meeting-limit-badge');
+
+        if (currentPlanBadge) {
+            currentPlanBadge.textContent = planNames[user.subscription] || 'Free';
+        }
+        if (meetingLimitBadge) {
+            meetingLimitBadge.textContent = planLimits[user.subscription] || '15 minutes';
+        }
 
         // Load active meetings
         loadActiveMeetings();
@@ -216,70 +224,307 @@ function updateConnectionUI(connections) {
     });
 }
 
+// Modal Management
+function openConnectionModal(formId) {
+    const modal = document.getElementById('connection-modal');
+    const forms = document.querySelectorAll('.connection-form');
+
+    // Hide all forms
+    forms.forEach(form => form.classList.remove('active'));
+
+    // Show selected form
+    const selectedForm = document.getElementById(formId);
+    if (selectedForm) {
+        selectedForm.classList.add('active');
+    }
+
+    // Show modal
+    modal.classList.add('active');
+}
+
+function closeConnectionModal() {
+    const modal = document.getElementById('connection-modal');
+    modal.classList.remove('active');
+
+    // Reset all forms
+    document.querySelectorAll('.connection-form').forEach(form => {
+        form.classList.remove('active');
+        form.querySelectorAll('input, select, textarea').forEach(input => {
+            if (input.type !== 'file') {
+                input.value = '';
+            }
+        });
+    });
+
+    // Clear file list
+    document.getElementById('file-list').innerHTML = '';
+}
+
+// Tab Switching for Documentation
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+    event.target.classList.add('active');
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+}
+
 // Connection functions
-async function connectDocumentation() {
-    alert('Documentation upload coming soon! This will allow you to upload PDFs, markdown files, or link to your documentation.');
-    // TODO: Implement file upload modal
+function connectDocumentation() {
+    openConnectionModal('documentation-form');
+    setupFileUpload();
 }
 
-async function connectSlack() {
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/datasources/slack/auth-url', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+function connectSlack() {
+    openConnectionModal('slack-form');
+}
 
-        const data = await response.json();
-        if (data.authUrl) {
-            window.location.href = data.authUrl;
-        }
-    } catch (error) {
-        console.error('Slack connection error:', error);
-        alert('Failed to connect to Slack');
+function connectGoogleSheets() {
+    openConnectionModal('sheets-form');
+}
+
+function connectNotion() {
+    openConnectionModal('notion-form');
+}
+
+function connectConfluence() {
+    openConnectionModal('confluence-form');
+}
+
+// File Upload Handler
+function setupFileUpload() {
+    const dropZone = document.getElementById('file-drop-zone');
+    const fileInput = document.getElementById('doc-files');
+    const fileList = document.getElementById('file-list');
+
+    // Click to upload
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    // File selection
+    fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+    // Drag and drop
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+    });
+
+    function handleFiles(files) {
+        fileList.innerHTML = '';
+        Array.from(files).forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <span class="file-item-name">${file.name} (${formatFileSize(file.size)})</span>
+                <span class="file-item-remove" onclick="removeFile(${index})">Remove</span>
+            `;
+            fileList.appendChild(fileItem);
+        });
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     }
 }
 
-async function connectGoogleSheets() {
+function removeFile(index) {
+    const fileInput = document.getElementById('doc-files');
+    const dt = new DataTransfer();
+    const files = Array.from(fileInput.files);
+
+    files.forEach((file, i) => {
+        if (i !== index) dt.items.add(file);
+    });
+
+    fileInput.files = dt.files;
+    fileInput.dispatchEvent(new Event('change'));
+}
+
+// Submit Functions
+async function submitDocumentation() {
+    const fileInput = document.getElementById('doc-files');
+    const urlInput = document.getElementById('doc-url');
+    const category = document.getElementById('doc-category').value;
+    const tags = document.getElementById('doc-tags').value;
+
+    const formData = new FormData();
+
+    // Add files if any
+    if (fileInput.files.length > 0) {
+        Array.from(fileInput.files).forEach(file => {
+            formData.append('files', file);
+        });
+    }
+
+    // Add URL if provided
+    if (urlInput.value) {
+        formData.append('url', urlInput.value);
+    }
+
+    formData.append('category', category);
+    formData.append('tags', tags);
+
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('/api/datasources/google-sheets/auth-url', {
+        const response = await fetch('/api/datasources/documentation/upload', {
+            method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
-            }
+            },
+            body: formData
         });
 
         const data = await response.json();
-        if (data.authUrl) {
-            window.location.href = data.authUrl;
+        if (response.ok) {
+            alert('Documentation connected successfully!');
+            closeConnectionModal();
+            loadConnectionStatus();
+        } else {
+            alert(data.error || 'Failed to connect documentation');
         }
     } catch (error) {
-        console.error('Google Sheets connection error:', error);
-        alert('Failed to connect to Google Sheets');
+        console.error('Documentation upload error:', error);
+        alert('Failed to upload documentation');
     }
 }
 
-async function connectCRM() {
-    const crmType = prompt('Which CRM? (salesforce/hubspot/pipedrive)');
-    if (!crmType) return;
+async function submitSlackConfig() {
+    const workspace = document.getElementById('slack-workspace').value;
+    const channels = document.getElementById('slack-channels').value;
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`/api/datasources/crm/${crmType}/auth-url`, {
+        const response = await fetch('/api/datasources/slack/configure', {
+            method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`
-            }
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ workspace, channels })
         });
 
         const data = await response.json();
-        if (data.authUrl) {
+        if (response.ok && data.authUrl) {
             window.location.href = data.authUrl;
+        } else {
+            alert(data.error || 'Failed to configure Slack');
         }
     } catch (error) {
-        console.error('CRM connection error:', error);
-        alert('Failed to connect to CRM');
+        console.error('Slack configuration error:', error);
+        alert('Failed to configure Slack');
     }
+}
+
+async function submitSheetsConfig() {
+    const sheetUrl = document.getElementById('sheets-url').value;
+    const refreshFrequency = document.getElementById('sheets-refresh').value;
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/datasources/google-sheets/configure', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ sheetUrl, refreshFrequency })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.authUrl) {
+            window.location.href = data.authUrl;
+        } else {
+            alert(data.error || 'Failed to configure Google Sheets');
+        }
+    } catch (error) {
+        console.error('Google Sheets configuration error:', error);
+        alert('Failed to configure Google Sheets');
+    }
+}
+
+async function submitNotionConfig() {
+    const workspace = document.getElementById('notion-workspace').value;
+    const syncFrequency = document.getElementById('notion-sync').value;
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/datasources/notion/configure', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ workspace, syncFrequency })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.authUrl) {
+            window.location.href = data.authUrl;
+        } else {
+            alert(data.error || 'Failed to configure Notion');
+        }
+    } catch (error) {
+        console.error('Notion configuration error:', error);
+        alert('Failed to configure Notion');
+    }
+}
+
+async function submitConfluenceConfig() {
+    const siteUrl = document.getElementById('confluence-url').value;
+    const email = document.getElementById('confluence-email').value;
+    const spaces = document.getElementById('confluence-spaces').value;
+
+    if (!siteUrl) {
+        alert('Please provide your Confluence site URL');
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/datasources/confluence/configure', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ siteUrl, email, spaces })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.authUrl) {
+            window.location.href = data.authUrl;
+        } else {
+            alert(data.error || 'Failed to configure Confluence');
+        }
+    } catch (error) {
+        console.error('Confluence configuration error:', error);
+        alert('Failed to configure Confluence');
+    }
+}
+
+// Meeting platform connections
+async function connectZoom() {
+    alert('Zoom integration: Install the Meeting Mind app from the Zoom App Marketplace, then configure your webhook URL in the Zoom dashboard.\n\nWebhook URL: ' + window.location.origin + '/api/integrations/zoom/webhook');
+}
+
+async function connectTeams() {
+    alert('Microsoft Teams integration: Go to your Azure AD portal, register the Meeting Mind app, and configure OAuth permissions.\n\nRedirect URI: ' + window.location.origin + '/api/integrations/teams/auth/callback');
+}
+
+async function connectGoogleMeet() {
+    alert('Google Meet integration: Create a Google Cloud project, enable the Google Meet API, and configure OAuth credentials.\n\nRedirect URI: ' + window.location.origin + '/api/integrations/google-meet/auth/callback');
 }
 
 function showUpgrade() {

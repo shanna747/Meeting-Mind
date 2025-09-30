@@ -34,7 +34,8 @@ class AuthService {
         documentation: { connected: false },
         slack: { connected: false },
         googleSheets: { connected: false },
-        crm: { connected: false }
+        notion: { connected: false },
+        confluence: { connected: false }
       },
       subscriptionLimits: this.getSubscriptionLimits(subscription)
     };

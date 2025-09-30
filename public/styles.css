@@ -395,20 +395,56 @@ body {
 .dashboard-welcome p {
     font-size: 18px;
     color: var(--text-secondary);
+    margin-bottom: 20px;
 }
 
-.connections-section {
-    margin-bottom: 48px;
+.subscription-badge {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 16px 24px;
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    margin-top: 20px;
 }
 
-.connections-section h2 {
+.subscription-badge span {
+    font-size: 14px;
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+/* Dashboard Sections */
+.dashboard-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+}
+
+.knowledge-base-section,
+.meeting-platforms-section {
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 40px;
+}
+
+.section-header {
+    margin-bottom: 32px;
+}
+
+.section-header h2 {
     font-size: 28px;
     margin-bottom: 8px;
 }
 
 .section-subtitle {
     color: var(--text-secondary);
-    margin-bottom: 32px;
+    font-size: 16px;
 }
 
 .connections-grid {
@@ -478,52 +514,109 @@ body {
     color: var(--success-color);
 }
 
-.active-meetings-section {
-    margin-bottom: 48px;
+/* Meeting Platforms Section */
+.platforms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
 }
 
-.active-meetings-section h2 {
-    font-size: 28px;
-    margin-bottom: 24px;
-}
-
-.meetings-list {
-    background: white;
+.platform-card {
+    background: #fafbfc;
     border: 2px solid var(--border-color);
     border-radius: 12px;
     padding: 32px;
+    transition: all 0.2s;
+}
+
+.platform-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow-lg);
+    border-color: var(--primary-color);
+}
+
+.platform-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.platform-logo {
+    flex-shrink: 0;
+}
+
+.platform-header h3 {
+    font-size: 20px;
+    margin: 0;
+}
+
+.platform-description {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    min-height: 48px;
+    line-height: 1.5;
+}
+
+.platform-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.feature-tag {
+    background: #e8f4f8;
+    color: #0369a1;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Active Meetings Box */
+.active-meetings-box {
+    margin-top: 40px;
+    padding-top: 40px;
+    border-top: 2px solid var(--border-color);
+}
+
+.active-meetings-box h3 {
+    font-size: 20px;
+    margin-bottom: 16px;
+}
+
+.meetings-list {
+    background: #fafbfc;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
 }
 
 .empty-state {
     text-align: center;
     color: var(--text-secondary);
-    padding: 40px;
-}
-
-.subscription-info {
-    background: white;
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
     padding: 32px;
 }
 
-.subscription-info h3 {
-    font-size: 24px;
-    margin-bottom: 20px;
+.meeting-item {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-color);
 }
 
-.subscription-details {
-    display: flex;
-    align-items: center;
-    gap: 32px;
-}
-
-.subscription-details p {
+.meeting-item h4 {
     font-size: 16px;
+    margin-bottom: 8px;
 }
 
-.subscription-details strong {
-    color: var(--text-primary);
+.meeting-item p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 4px 0;
 }
 
 /* Responsive */
@@ -548,13 +641,273 @@ body {
         padding: 20px;
     }
 
-    .connections-grid {
+    .connections-grid,
+    .platforms-grid {
         grid-template-columns: 1fr;
     }
 
-    .subscription-details {
+    .subscription-badge {
         flex-direction: column;
         align-items: flex-start;
-        gap: 16px;
+        gap: 12px;
+    }
+
+    .knowledge-base-section,
+    .meeting-platforms-section {
+        padding: 24px;
+    }
+}
+
+/* Connection Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    overflow-y: auto;
+    padding: 40px 20px;
+}
+
+.modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    max-width: 600px;
+    width: 100%;
+    padding: 40px;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 32px;
+    font-weight: 300;
+    color: var(--text-secondary);
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+}
+
+/* Connection Forms */
+.connection-form {
+    display: none;
+}
+
+.connection-form.active {
+    display: block;
+}
+
+.connection-form h2 {
+    font-size: 28px;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.form-description {
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    font-size: 16px;
+}
+
+/* Form Tabs */
+.form-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    color: var(--primary-color);
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* File Upload Area */
+.file-upload-area {
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    background: #fafbfc;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.file-upload-area:hover {
+    border-color: var(--primary-color);
+    background: #f8f9ff;
+}
+
+.file-upload-area.dragover {
+    border-color: var(--primary-color);
+    background: #f8f9ff;
+}
+
+.upload-icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 16px;
+}
+
+.upload-prompt p {
+    color: var(--text-secondary);
+    margin: 8px 0;
+}
+
+.upload-prompt a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.upload-prompt a:hover {
+    text-decoration: underline;
+}
+
+.upload-hint {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+#file-list {
+    margin-top: 16px;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.file-item-name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.file-item-remove {
+    color: var(--error-color);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* Info Box */
+.info-box {
+    background: #f8f9ff;
+    border: 2px solid #e8ebf9;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.info-box h4 {
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.info-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.info-box li {
+    padding: 6px 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* Field Hint */
+.field-hint {
+    display: block;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Modal Responsive */
+@media (max-width: 768px) {
+    .modal {
+        padding: 20px 10px;
+    }
+
+    .modal-content {
+        padding: 24px;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions button {
+        width: 100%;
     }
 }
