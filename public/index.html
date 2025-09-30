@@ -89,7 +89,7 @@
                 <div class="subscription-plans">
                     <div class="plan-card" onclick="selectPlan('free')">
                         <div class="plan-header">
-                            <h3>Starter</h3>
+                            <h3>Basic</h3>
                             <div class="plan-price">
                                 <span class="price">FREE</span>
                             </div>
@@ -99,6 +99,7 @@
                             <li>✓ Basic transcription</li>
                             <li>✓ Company Brain access</li>
                             <li>✓ All integrations</li>
+                            <li>✓ Support Docs</li>
                         </ul>
                         <input type="radio" name="subscription" value="free" id="plan-free" checked>
                     </div>
@@ -106,9 +107,9 @@
                     <div class="plan-card" onclick="selectPlan('pro')">
                         <div class="plan-badge">Popular</div>
                         <div class="plan-header">
-                            <h3>Professional</h3>
+                            <h3>Pro</h3>
                             <div class="plan-price">
-                                <span class="price">$19</span>
+                                <span class="price">$11</span>
                                 <span class="period">/month</span>
                             </div>
                         </div>
@@ -117,6 +118,7 @@
                             <li>✓ Advanced transcription</li>
                             <li>✓ Company Brain access</li>
                             <li>✓ All integrations</li>
+                            <li>✓ Support Docs</li>
                             <li>✓ Priority support</li>
                         </ul>
                         <input type="radio" name="subscription" value="pro" id="plan-pro">
@@ -126,7 +128,7 @@
                         <div class="plan-header">
                             <h3>Business</h3>
                             <div class="plan-price">
-                                <span class="price">$49</span>
+                                <span class="price">$24</span>
                                 <span class="period">/month</span>
                             </div>
                         </div>
@@ -135,6 +137,7 @@
                             <li>✓ Premium transcription</li>
                             <li>✓ Company Brain access</li>
                             <li>✓ All integrations</li>
+                            <li>✓ Support Docs</li>
                             <li>✓ Priority support</li>
                             <li>✓ Custom features</li>
                         </ul>
@@ -176,6 +179,10 @@
                 <div class="logo">
                     <h2>Meeting Mind</h2>
                 </div>
+                <nav class="main-nav">
+                    <a href="#" class="nav-link active" onclick="showDashboardTab(event, 'home')">Dashboard</a>
+                    <a href="#" class="nav-link" onclick="showDashboardTab(event, 'brain')">Brain</a>
+                </nav>
                 <div class="user-menu">
                     <span id="user-name">User</span>
                     <button class="btn-secondary" onclick="handleLogout()">Logout</button>
@@ -184,6 +191,8 @@
         </header>
 
         <main class="dashboard-main">
+            <!-- Home Tab -->
+            <div id="home-tab" class="dashboard-tab active">
             <div class="dashboard-container">
                 <section class="dashboard-welcome">
                     <h1>Welcome to Your Dashboard</h1>
@@ -207,7 +216,7 @@
 
                         <div class="connections-grid">
                             <!-- Product Documentation -->
-                            <div class="connection-card">
+                            <div class="connection-card" data-source="documentation">
                                 <div class="connection-header">
                                     <div class="connection-icon">📚</div>
                                     <h3>Product Documentation</h3>
@@ -217,11 +226,11 @@
                                     <span class="status-indicator"></span>
                                     <span>Not Connected</span>
                                 </div>
-                                <button class="btn-primary" onclick="connectDocumentation()">Connect</button>
+                                <button class="btn-primary" onclick="connectDocumentation()">Add</button>
                             </div>
 
                             <!-- Slack -->
-                            <div class="connection-card">
+                            <div class="connection-card" data-source="slack">
                                 <div class="connection-header">
                                     <div class="connection-icon">💬</div>
                                     <h3>Slack</h3>
@@ -235,7 +244,7 @@
                             </div>
 
                             <!-- Google Sheets -->
-                            <div class="connection-card">
+                            <div class="connection-card" data-source="googleSheets">
                                 <div class="connection-header">
                                     <div class="connection-icon">📊</div>
                                     <h3>Google Sheets</h3>
@@ -249,7 +258,7 @@
                             </div>
 
                             <!-- Notion -->
-                            <div class="connection-card">
+                            <div class="connection-card" data-source="notion">
                                 <div class="connection-header">
                                     <div class="connection-icon">📝</div>
                                     <h3>Notion</h3>
@@ -263,7 +272,7 @@
                             </div>
 
                             <!-- Confluence -->
-                            <div class="connection-card">
+                            <div class="connection-card" data-source="confluence">
                                 <div class="connection-header">
                                     <div class="connection-icon">🌐</div>
                                     <h3>Confluence</h3>
@@ -374,6 +383,63 @@
                     </section>
                 </div>
             </div>
+            </div>
+            <!-- End Home Tab -->
+
+            <!-- Brain Tab -->
+            <div id="brain-tab" class="dashboard-tab">
+                <div class="brain-container">
+                    <section class="brain-header">
+                        <h1>🧠 Company Brain</h1>
+                        <p class="brain-subtitle">All your connected knowledge organized by topic</p>
+                        <div class="brain-stats">
+                            <div class="stat-card">
+                                <span class="stat-number" id="total-items">0</span>
+                                <span class="stat-label">Total Items</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="total-topics">0</span>
+                                <span class="stat-label">Topics</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="total-sources">0</span>
+                                <span class="stat-label">Sources</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Topic Filter -->
+                    <section class="topic-filter">
+                        <div class="filter-controls">
+                            <input type="text" id="brain-search" placeholder="Search brain..." class="search-input">
+                            <select id="topic-filter" class="filter-select" onchange="filterBrainByTopic()">
+                                <option value="all">All Topics</option>
+                            </select>
+                            <select id="source-filter" class="filter-select" onchange="filterBrainBySource()">
+                                <option value="all">All Sources</option>
+                                <option value="documentation">Documentation</option>
+                                <option value="slack">Slack</option>
+                                <option value="sheets">Google Sheets</option>
+                                <option value="notion">Notion</option>
+                                <option value="confluence">Confluence</option>
+                            </select>
+                        </div>
+                    </section>
+
+                    <!-- Brain Content organized by Topics -->
+                    <section class="brain-content">
+                        <div id="brain-topics-list">
+                            <div class="empty-brain-state">
+                                <div class="empty-icon">🧠</div>
+                                <h3>Your Brain is Empty</h3>
+                                <p>Connect data sources from the Dashboard to start building your company knowledge base</p>
+                                <button class="btn-primary" onclick="showDashboardTab(event, 'home')">Go to Dashboard</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <!-- End Brain Tab -->
         </main>
     </div>
 
@@ -432,7 +498,7 @@
 
                 <div class="form-actions">
                     <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
-                    <button class="btn-primary" onclick="submitDocumentation()">Connect</button>
+                    <button class="btn-primary" onclick="submitDocumentation()">Sync</button>
                 </div>
             </div>
 
@@ -464,7 +530,7 @@
 
                 <div class="form-actions">
                     <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
-                    <button class="btn-primary" onclick="submitSlackConfig()">Authorize with Slack</button>
+                    <button class="btn-primary" onclick="submitSlackConfig()">Sync</button>
                 </div>
             </div>
 
@@ -500,7 +566,7 @@
 
                 <div class="form-actions">
                     <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
-                    <button class="btn-primary" onclick="submitSheetsConfig()">Authorize with Google</button>
+                    <button class="btn-primary" onclick="submitSheetsConfig()">Sync</button>
                 </div>
             </div>
 
@@ -536,7 +602,7 @@
 
                 <div class="form-actions">
                     <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
-                    <button class="btn-primary" onclick="submitNotionConfig()">Authorize with Notion</button>
+                    <button class="btn-primary" onclick="submitNotionConfig()">Sync</button>
                 </div>
             </div>
 
@@ -574,7 +640,7 @@
 
                 <div class="form-actions">
                     <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
-                    <button class="btn-primary" onclick="submitConfluenceConfig()">Authorize with Atlassian</button>
+                    <button class="btn-primary" onclick="submitConfluenceConfig()">Sync</button>
                 </div>
             </div>
 
