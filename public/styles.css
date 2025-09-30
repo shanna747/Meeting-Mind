@@ -911,3 +911,282 @@ body {
         width: 100%;
     }
 }
+
+/* Dashboard Tabs */
+.dashboard-tab {
+    display: none;
+}
+
+.dashboard-tab.active {
+    display: block;
+}
+
+.main-nav {
+    display: flex;
+    gap: 2rem;
+}
+
+.main-nav .nav-link {
+    color: #666;
+    text-decoration: none;
+    padding: 0.5rem 0;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.main-nav .nav-link:hover {
+    color: #2196F3;
+}
+
+.main-nav .nav-link.active {
+    color: #2196F3;
+    border-bottom-color: #2196F3;
+}
+
+/* Brain Page Styles */
+.brain-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.brain-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.brain-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    color: #1a1a1a;
+}
+
+.brain-subtitle {
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+.brain-stats {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    min-width: 150px;
+    text-align: center;
+}
+
+.stat-number {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Topic Filter */
+.topic-filter {
+    margin-bottom: 2rem;
+}
+
+.filter-controls {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.search-input, .filter-select {
+    padding: 0.75rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.search-input {
+    flex: 1;
+    min-width: 250px;
+}
+
+.search-input:focus, .filter-select:focus {
+    outline: none;
+    border-color: #2196F3;
+}
+
+.filter-select {
+    min-width: 200px;
+    background: white;
+    cursor: pointer;
+}
+
+/* Brain Content */
+.brain-content {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.topic-section {
+    margin-bottom: 3rem;
+}
+
+.topic-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f0f0f0;
+    margin-bottom: 1.5rem;
+}
+
+.topic-header h2 {
+    font-size: 1.5rem;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.item-count {
+    background: #e3f2fd;
+    color: #2196F3;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.topic-items {
+    display: grid;
+    gap: 1rem;
+}
+
+.brain-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.brain-item:hover {
+    background: #fff;
+    border-color: #2196F3;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.1);
+}
+
+.item-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.item-content {
+    flex: 1;
+}
+
+.item-title {
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+    word-break: break-all;
+}
+
+.item-meta {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.source-badge {
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 500;
+}
+
+.tag {
+    background: #fff3e0;
+    color: #e65100;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.date {
+    color: #999;
+}
+
+.empty-brain-state {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.empty-brain-state h3 {
+    font-size: 1.5rem;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+}
+
+.empty-brain-state p {
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+
+/* Brain Item Actions */
+.item-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.brain-item:hover .item-actions {
+    opacity: 1;
+}
+
+.btn-icon {
+    background: transparent;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-size: 1.2rem;
+}
+
+.btn-icon:hover {
+    background: #f0f0f0;
+}
+
+.btn-icon.btn-delete:hover {
+    background: #ffebee;
+}
+
+.btn-icon span {
+    display: block;
+}

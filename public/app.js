@@ -22,6 +22,33 @@ function showDashboard() {
     loadDashboardData();
 }
 
+function showDashboardTab(event, tabName) {
+    if (event) event.preventDefault();
+
+    // Update nav links
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    if (event) {
+        event.target.classList.add('active');
+    }
+
+    // Update tab content
+    document.querySelectorAll('.dashboard-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    const selectedTab = document.getElementById(`${tabName}-tab`);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+
+    // Load brain data if switching to brain tab
+    if (tabName === 'brain') {
+        loadBrainData();
+    }
+}
+
 // Plan selection
 function selectPlan(planType) {
     selectedSubscription = planType;
@@ -219,7 +246,12 @@ function updateConnectionUI(connections) {
             status.innerHTML = '<span class="status-indicator"></span><span>Connected</span>';
 
             const button = card.querySelector('button');
-            button.textContent = 'Configure';
+            // Product Documentation uses "Add" button
+            if (source === 'documentation') {
+                button.textContent = 'Add';
+            } else {
+                button.textContent = 'Sync';
+            }
         }
     });
 }
@@ -378,6 +410,14 @@ async function submitDocumentation() {
 
     try {
         const token = localStorage.getItem('token');
+
+        if (!token) {
+            alert('Please log in first to connect data sources');
+            closeConnectionModal();
+            showLogin();
+            return;
+        }
+
         const response = await fetch('/api/datasources/documentation/upload', {
             method: 'POST',
             headers: {
@@ -722,6 +762,209 @@ function handleTranscriptUpdate(data) {
 
 function showTimeLimitWarning(data) {
     alert(`Meeting time limit approaching! You have ${data.remainingMinutes} minutes left.`);
+}
+
+// Brain Data Functions
+async function loadBrainData() {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await fetch('/api/brain/data', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.brainData) {
+            displayBrainData(data.brainData);
+            updateBrainStats(data.brainData);
+        }
+    } catch (error) {
+        console.error('Error loading brain data:', error);
+    }
+}
+
+function displayBrainData(brainData) {
+    const container = document.getElementById('brain-topics-list');
+
+    if (!brainData || brainData.length === 0) {
+        container.innerHTML = `
+            <div class="empty-brain-state">
+                <div class="empty-icon">🧠</div>
+                <h3>Your Brain is Empty</h3>
+                <p>Connect data sources from the Dashboard to start building your company knowledge base</p>
+                <button class="btn-primary" onclick="showDashboardTab(event, 'home')">Go to Dashboard</button>
+            </div>
+        `;
+        return;
+    }
+
+    // Group by category/topic
+    const grouped = {};
+    brainData.forEach(item => {
+        const category = item.category || 'General';
+        if (!grouped[category]) {
+            grouped[category] = [];
+        }
+        grouped[category].push(item);
+    });
+
+    // Populate topic filter
+    const topicFilter = document.getElementById('topic-filter');
+    topicFilter.innerHTML = '<option value="all">All Topics</option>';
+    Object.keys(grouped).forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = `${category} (${grouped[category].length})`;
+        topicFilter.appendChild(option);
+    });
+
+    // Display grouped data
+    let html = '';
+    Object.keys(grouped).sort().forEach(category => {
+        html += `
+            <div class="topic-section" data-topic="${category}">
+                <div class="topic-header">
+                    <h2>${category}</h2>
+                    <span class="item-count">${grouped[category].length} items</span>
+                </div>
+                <div class="topic-items">
+        `;
+
+        grouped[category].forEach(item => {
+            const icon = item.type === 'file' ? '📄' : '🔗';
+            const sourceIcon = {
+                'documentation': '📚',
+                'slack': '💬',
+                'sheets': '📊',
+                'notion': '📝',
+                'confluence': '📖'
+            }[item.source] || '📄';
+
+            html += `
+                <div class="brain-item" data-source="${item.source}" data-item-id="${item.id}">
+                    <div class="item-icon">${icon}</div>
+                    <div class="item-content">
+                        <div class="item-title">${item.filename || item.content}</div>
+                        <div class="item-meta">
+                            <span class="source-badge">${sourceIcon} ${item.source}</span>
+                            ${item.tags && item.tags.length > 0 ? item.tags.map(tag => `<span class="tag">${tag}</span>`).join('') : ''}
+                            <span class="date">${new Date(item.addedAt).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        ${item.type === 'url' ? `<button class="btn-icon" onclick="viewBrainItem('${item.id}')" title="View URL"><span>👁️</span></button>` : ''}
+                        <button class="btn-icon btn-delete" onclick="deleteBrainItem('${item.id}')" title="Delete"><span>🗑️</span></button>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function updateBrainStats(brainData) {
+    document.getElementById('total-items').textContent = brainData.length;
+
+    const topics = new Set(brainData.map(item => item.category || 'General'));
+    document.getElementById('total-topics').textContent = topics.size;
+
+    const sources = new Set(brainData.map(item => item.source));
+    document.getElementById('total-sources').textContent = sources.size;
+}
+
+function filterBrainByTopic() {
+    const selectedTopic = document.getElementById('topic-filter').value;
+    const sections = document.querySelectorAll('.topic-section');
+
+    sections.forEach(section => {
+        if (selectedTopic === 'all' || section.dataset.topic === selectedTopic) {
+            section.style.display = 'block';
+        } else {
+            section.style.display = 'none';
+        }
+    });
+}
+
+function filterBrainBySource() {
+    const selectedSource = document.getElementById('source-filter').value;
+    const items = document.querySelectorAll('.brain-item');
+
+    items.forEach(item => {
+        if (selectedSource === 'all' || item.dataset.source === selectedSource) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+async function viewBrainItem(itemId) {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/brain/item/${itemId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.item) {
+            // Open URL in new tab
+            if (data.item.type === 'url') {
+                window.open(data.item.content, '_blank');
+            }
+        } else {
+            alert(data.error || 'Failed to load item');
+        }
+    } catch (error) {
+        console.error('Error viewing brain item:', error);
+        alert('Failed to view item');
+    }
+}
+
+async function deleteBrainItem(itemId) {
+    if (!confirm('Are you sure you want to delete this item from your Brain?')) {
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/brain/item/${itemId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Remove item from UI
+            const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
+            if (itemElement) {
+                itemElement.remove();
+            }
+
+            // Reload brain data to update stats
+            loadBrainData();
+        } else {
+            alert(data.error || 'Failed to delete item');
+        }
+    } catch (error) {
+        console.error('Error deleting brain item:', error);
+        alert('Failed to delete item');
+    }
 }
 
 // Check if user is already logged in
