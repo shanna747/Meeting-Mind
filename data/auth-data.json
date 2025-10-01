@@ -23,16 +23,32 @@
             "connectedAt": "2025-09-30T17:13:44.058Z"
           },
           "slack": {
-            "connected": false
+            "connected": true,
+            "workspace": "acme-3ag4538.slack.com",
+            "channels": [],
+            "connectedAt": "2025-09-30T20:29:40.810Z"
           },
           "googleSheets": {
-            "connected": false
+            "connected": true,
+            "sheetUrl": "https://docs.google.com/document/d/1KqjscPBEqxqmyuJSfmhSpPWQ7BBnq8KqmpDm0UBtgA4/edit?tab=t.0#heading=h.dgoq8eakbb59",
+            "refreshFrequency": "hourly",
+            "connectedAt": "2025-09-30T20:33:26.629Z"
           },
           "notion": {
             "connected": false
           },
           "confluence": {
             "connected": false
+          },
+          "zoom": {
+            "accountId": " 943 139 5416",
+            "clientId": "NagK1MnsQFCg3dGIlfSlEw",
+            "clientSecret": "vz2mN04RfCxmrpoYjcbpw",
+            "webhookToken": "1aUa8n8dVjpZnpq5IsGmTNohlNZ8iIQX",
+            "platform": "zoom",
+            "configuredAt": "2025-09-30T20:46:40.307Z",
+            "connected": true,
+            "connectedAt": "2025-09-30T20:46:40.307Z"
           }
         },
         "subscriptionLimits": {
@@ -45,16 +61,6 @@
           ]
         },
         "brainData": [
-          {
-            "id": "6712a06f90626953506805fbc2534110",
-            "source": "documentation",
-            "type": "file",
-            "content": "uploads/documentation/1759251697201-551141827-Cover Letter - Thoughtful.ai.docx",
-            "filename": "Cover Letter - Thoughtful.ai.docx",
-            "category": "api",
-            "tags": [],
-            "addedAt": "2025-09-30T17:01:37.203Z"
-          },
           {
             "id": "5155a564e898c08cd7c8f285a9501325",
             "source": "documentation",
