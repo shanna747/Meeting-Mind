@@ -1,7 +1,7 @@
 {
-  "name": "meeting-mind",
+  "name": "answerly-ai",
   "version": "1.0.0",
-  "description": "AI-powered meeting intelligence platform",
+  "description": "AI-powered question-answering platform",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

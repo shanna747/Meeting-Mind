@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meeting Mind - AI-Powered Meeting Intelligence</title>
+    <title>Answerly.ai - From Question to Resolved Answer</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -12,7 +16,8 @@
         <header class="landing-header">
             <nav class="navbar">
                 <div class="logo">
-                    <h1>Meeting Mind</h1>
+                    <img src="logo.svg" alt="Answerly.ai Logo" width="40" height="40" style="vertical-align: middle; margin-right: 12px;">
+                    <h1 style="display: inline-block; margin: 0;">Answerly.ai</h1>
                 </div>
                 <div class="nav-buttons">
                     <button class="btn-secondary" onclick="showLogin()">Login</button>
@@ -22,33 +27,66 @@
         </header>
 
         <main class="landing-main">
+            <!-- Hero Section -->
             <section class="hero">
-                <h2>Your AI-Powered Meeting Companion</h2>
-                <p class="hero-subtitle">Never miss important details. Meeting Mind uses AI to capture insights, answer questions, and keep you informed in real-time.</p>
-                <button class="btn-cta" onclick="showRegister()">Start Free Trial</button>
+                <div class="hero-badge">✨ AI-Powered Knowledge Assistant</div>
+                <h2 class="hero-title">Get Real-Time Answers<br>During Every Meeting</h2>
+                <p class="hero-subtitle">Answerly AI listens in real time meetings and pulls answers directly from your product docs, so you can focus on winning the conversation.</p>
+                <div class="hero-cta">
+                    <button class="btn-cta" onclick="showRegister()">Try It Free</button>
+                    <button class="btn-secondary btn-lg" onclick="showLogin()">See How It Works</button>
+                </div>
+                <div class="hero-proof">
+                    <span class="proof-item">✓ No credit card required</span>
+                    <span class="proof-item">✓ 5-minute setup</span>
+                    <span class="proof-item">✓ Works with your tools</span>
+                </div>
             </section>
 
+            <!-- Features Section -->
             <section class="features">
-                <div class="feature-card">
-                    <div class="feature-icon">📝</div>
-                    <h3>Real-Time Transcription</h3>
-                    <p>Automatic transcription with speaker identification</p>
+                <div class="section-header-center">
+                    <h2 class="section-title">Confidence & Credibility in Every Meeting</h2>
+                    <p class="section-description">Turn your company knowledge into instant, actionable answers</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🧠</div>
-                    <h3>Company Brain</h3>
-                    <p>AI answers questions using your company knowledge</p>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <div class="feature-icon gradient-purple">💼</div>
+                        </div>
+                        <h3>Product Knowledge Companion</h3>
+                        <p>By surfacing the right information at the right time, the tool helps you handle tough client questions with authority, building trust and strengthening relationships.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <div class="feature-icon gradient-green">✓</div>
+                        </div>
+                        <h3>Get Answers Instantly</h3>
+                        <p>Receive precise, sourced answers in seconds. No more "I'll get back to you" or scrambling through docs mid-call.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <div class="feature-icon gradient-blue">🧠</div>
+                        </div>
+                        <h3>Your Product Brain</h3>
+                        <p>Upload docs, connect integrations, and build a knowledge base that learns and grows with your team.</p>
+                    </div>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🔗</div>
-                    <h3>Integrations</h3>
-                    <p>Works with Zoom, Teams, and Google Meet</p>
+            </section>
+
+            <!-- CTA Section -->
+            <section class="cta-section">
+                <div class="cta-content">
+                    <h2 class="cta-title">Ready to answer smarter?</h2>
+                    <p class="cta-description">Join teams who've transformed how they handle questions</p>
+                    <button class="btn-cta" onclick="showRegister()">Start Your Free Trial</button>
                 </div>
             </section>
         </main>
 
         <footer class="landing-footer">
-            <p>&copy; 2025 Meeting Mind. All rights reserved.</p>
+            <p>&copy; 2025 Answerly.ai. All rights reserved.</p>
         </footer>
     </div>
 
@@ -57,7 +95,7 @@
         <div class="auth-container">
             <div class="auth-box">
                 <h2>Welcome Back</h2>
-                <p class="auth-subtitle">Log in to your Meeting Mind account</p>
+                <parameter name="auth-subtitle">Log in to your Answerly.ai account</p>
 
                 <form id="login-form" onsubmit="handleLogin(event)">
                     <div class="form-group">
@@ -174,8 +212,13 @@
         <header class="dashboard-header">
             <div class="dashboard-nav">
                 <div class="logo">
-                    <h2>Meeting Mind</h2>
+                    <img src="logo.svg" alt="Answerly.ai Logo" width="32" height="32" style="vertical-align: middle; margin-right: 10px;">
+                    <h2 style="display: inline-block; margin: 0;">Answerly.ai</h2>
                 </div>
+                <nav class="main-nav">
+                    <button class="nav-link active" onclick="showDashboardView()">Dashboard</button>
+                    <button class="nav-link" onclick="showKnowledgeHub()">Knowledge Hub</button>
+                </nav>
                 <div class="user-menu">
                     <span id="user-name">User</span>
                     <button class="btn-secondary" onclick="handleLogout()">Logout</button>
@@ -184,19 +227,21 @@
         </header>
 
         <main class="dashboard-main">
-            <div class="dashboard-container">
-                <section class="dashboard-welcome">
-                    <h1>Welcome to Your Dashboard</h1>
-                    <p>Configure your Company Brain and connect to meeting platforms</p>
-                    <div class="subscription-badge">
-                        <span><strong>Plan:</strong> <span id="current-plan-badge">Free</span></span>
-                        <span><strong>Meeting Limit:</strong> <span id="meeting-limit-badge">15 minutes</span></span>
-                        <button class="btn-secondary btn-sm" onclick="showUpgrade()">Upgrade</button>
-                    </div>
-                </section>
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="dashboard-view active">
+                <div class="dashboard-container">
+                    <section class="dashboard-welcome">
+                        <h1>Welcome to Your Dashboard</h1>
+                        <p>Configure your Company Brain and connect to meeting platforms</p>
+                        <div class="subscription-badge">
+                            <span><strong>Plan:</strong> <span id="current-plan-badge">Free</span></span>
+                            <span><strong>Meeting Limit:</strong> <span id="meeting-limit-badge">15 minutes</span></span>
+                            <button class="btn-secondary btn-sm" onclick="showUpgrade()">Upgrade</button>
+                        </div>
+                    </section>
 
-                <div class="dashboard-sections">
-                    <!-- Section 1: Company Knowledge Base -->
+                    <div class="dashboard-sections">
+                        <!-- Company Knowledge Base -->
                     <section class="knowledge-base-section">
                         <div class="section-header">
                             <div>
@@ -206,74 +251,18 @@
                         </div>
 
                         <div class="connections-grid">
-                            <!-- Product Documentation -->
+                            <!-- Company Knowledge Base -->
                             <div class="connection-card">
                                 <div class="connection-header">
                                     <div class="connection-icon">📚</div>
-                                    <h3>Product Documentation</h3>
+                                    <h3>Company Knowledge Base</h3>
                                 </div>
-                                <p class="connection-description">Upload or link your product docs, help articles, and technical documentation</p>
+                                <p class="connection-description">Upload or link your company knowledge base, documentation, help articles, and resources</p>
                                 <div class="connection-status disconnected">
                                     <span class="status-indicator"></span>
                                     <span>Not Connected</span>
                                 </div>
                                 <button class="btn-primary" onclick="connectDocumentation()">Connect</button>
-                            </div>
-
-                            <!-- Slack -->
-                            <div class="connection-card">
-                                <div class="connection-header">
-                                    <div class="connection-icon">💬</div>
-                                    <h3>Slack</h3>
-                                </div>
-                                <p class="connection-description">Access team conversations, channels, and shared knowledge from Slack</p>
-                                <div class="connection-status disconnected">
-                                    <span class="status-indicator"></span>
-                                    <span>Not Connected</span>
-                                </div>
-                                <button class="btn-primary" onclick="connectSlack()">Connect</button>
-                            </div>
-
-                            <!-- Google Sheets -->
-                            <div class="connection-card">
-                                <div class="connection-header">
-                                    <div class="connection-icon">📊</div>
-                                    <h3>Google Sheets</h3>
-                                </div>
-                                <p class="connection-description">Pull data from spreadsheets, reports, and shared documents</p>
-                                <div class="connection-status disconnected">
-                                    <span class="status-indicator"></span>
-                                    <span>Not Connected</span>
-                                </div>
-                                <button class="btn-primary" onclick="connectGoogleSheets()">Connect</button>
-                            </div>
-
-                            <!-- Notion -->
-                            <div class="connection-card">
-                                <div class="connection-header">
-                                    <div class="connection-icon">📝</div>
-                                    <h3>Notion</h3>
-                                </div>
-                                <p class="connection-description">Access your Notion workspace, pages, databases, and team wiki</p>
-                                <div class="connection-status disconnected">
-                                    <span class="status-indicator"></span>
-                                    <span>Not Connected</span>
-                                </div>
-                                <button class="btn-primary" onclick="connectNotion()">Connect</button>
-                            </div>
-
-                            <!-- Confluence -->
-                            <div class="connection-card">
-                                <div class="connection-header">
-                                    <div class="connection-icon">🌐</div>
-                                    <h3>Confluence</h3>
-                                </div>
-                                <p class="connection-description">Connect to Confluence spaces, pages, and team documentation</p>
-                                <div class="connection-status disconnected">
-                                    <span class="status-indicator"></span>
-                                    <span>Not Connected</span>
-                                </div>
-                                <button class="btn-primary" onclick="connectConfluence()">Connect</button>
                             </div>
                         </div>
                     </section>
@@ -348,7 +337,7 @@
                                     </div>
                                     <h3>Google Meet</h3>
                                 </div>
-                                <p class="platform-description">Enable Meeting Mind on Google Meet for instant access to company knowledge</p>
+                                <p class="platform-description">Enable Answerly.ai on Google Meet for instant access to company knowledge</p>
                                 <div class="platform-features">
                                     <span class="feature-tag">✓ Real-time transcription</span>
                                     <span class="feature-tag">✓ AI-powered Q&A</span>
@@ -374,6 +363,70 @@
                     </section>
                 </div>
             </div>
+            </div>
+
+            <!-- Knowledge Hub View -->
+            <div id="knowledge-hub-view" class="dashboard-view">
+                <div class="dashboard-container">
+                    <section class="knowledge-hub-section">
+                        <div class="section-header">
+                            <div>
+                                <h2>📚 Knowledge Hub</h2>
+                                <p class="section-subtitle">Review, manage, and organize your connected documents</p>
+                            </div>
+                            <div class="section-actions">
+                                <button class="btn-secondary active" onclick="filterDocuments('all')">All</button>
+                                <button class="btn-secondary" onclick="filterDocuments('active')">Active</button>
+                                <button class="btn-secondary" onclick="filterDocuments('archived')">Archived</button>
+                            </div>
+                        </div>
+
+                        <div class="knowledge-hub-stats">
+                            <div class="stat-card">
+                                <div class="stat-value" id="total-documents">0</div>
+                                <div class="stat-label">Total Documents</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="active-documents">0</div>
+                                <div class="stat-label">Active</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="archived-documents">0</div>
+                                <div class="stat-label">Archived</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="total-size">0 MB</div>
+                                <div class="stat-label">Storage Used</div>
+                            </div>
+                        </div>
+
+                        <div class="documents-table-container">
+                            <table class="documents-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Source</th>
+                                        <th>Category</th>
+                                        <th>Size</th>
+                                        <th>Added</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="documents-table-body">
+                                    <tr class="empty-state-row">
+                                        <td colspan="7" style="text-align: center; padding: 40px;">
+                                            <div class="empty-state">
+                                                <p>No documents connected yet. Start by connecting a data source in the Dashboard.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -384,8 +437,8 @@
 
             <!-- Documentation Connection Form -->
             <div id="documentation-form" class="connection-form">
-                <h2>Connect Documentation</h2>
-                <p class="form-description">Upload files or provide URLs to your product documentation</p>
+                <h2>Connect Company Knowledge Base</h2>
+                <p class="form-description">Upload files or provide URLs to your company knowledge base</p>
 
                 <div class="form-tabs">
                     <button class="tab-btn active" onclick="switchTab('upload')">Upload Files</button>
@@ -436,147 +489,6 @@
                 </div>
             </div>
 
-            <!-- Slack Connection Form -->
-            <div id="slack-form" class="connection-form">
-                <h2>Connect Slack Workspace</h2>
-                <p class="form-description">Connect your Slack workspace to access team knowledge</p>
-
-                <div class="form-group">
-                    <label for="slack-workspace">Workspace Name or URL</label>
-                    <input type="text" id="slack-workspace" placeholder="your-workspace.slack.com">
-                </div>
-
-                <div class="info-box">
-                    <h4>What Meeting Mind will access:</h4>
-                    <ul>
-                        <li>✓ Public channel messages</li>
-                        <li>✓ User profiles and names</li>
-                        <li>✓ Channel names and descriptions</li>
-                        <li>✓ Search capabilities</li>
-                    </ul>
-                </div>
-
-                <div class="form-group">
-                    <label>Channels to Monitor (optional)</label>
-                    <input type="text" id="slack-channels" placeholder="#general, #support, #product">
-                    <span class="field-hint">Leave empty to access all public channels</span>
-                </div>
-
-                <div class="form-actions">
-                    <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
-                    <button class="btn-primary" onclick="submitSlackConfig()">Authorize with Slack</button>
-                </div>
-            </div>
-
-            <!-- Google Sheets Connection Form -->
-            <div id="sheets-form" class="connection-form">
-                <h2>Connect Google Sheets</h2>
-                <p class="form-description">Access data from your Google Sheets and spreadsheets</p>
-
-                <div class="form-group">
-                    <label for="sheets-url">Sheet URL (optional)</label>
-                    <input type="url" id="sheets-url" placeholder="https://docs.google.com/spreadsheets/d/...">
-                    <span class="field-hint">Or select sheets after authentication</span>
-                </div>
-
-                <div class="form-group">
-                    <label for="sheets-refresh">Data Refresh Frequency</label>
-                    <select id="sheets-refresh">
-                        <option value="realtime">Real-time</option>
-                        <option value="5min">Every 5 minutes</option>
-                        <option value="15min">Every 15 minutes</option>
-                        <option value="hourly" selected>Hourly</option>
-                        <option value="daily">Daily</option>
-                    </select>
-                </div>
-
-                <div class="info-box">
-                    <h4>Permissions Required:</h4>
-                    <ul>
-                        <li>✓ View your Google Sheets</li>
-                        <li>✓ Read spreadsheet data</li>
-                    </ul>
-                </div>
-
-                <div class="form-actions">
-                    <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
-                    <button class="btn-primary" onclick="submitSheetsConfig()">Authorize with Google</button>
-                </div>
-            </div>
-
-            <!-- Notion Connection Form -->
-            <div id="notion-form" class="connection-form">
-                <h2>Connect Notion Workspace</h2>
-                <p class="form-description">Access your Notion pages, databases, and team wiki</p>
-
-                <div class="form-group">
-                    <label for="notion-workspace">Workspace Name</label>
-                    <input type="text" id="notion-workspace" placeholder="Your Workspace">
-                </div>
-
-                <div class="info-box">
-                    <h4>What Meeting Mind will access:</h4>
-                    <ul>
-                        <li>✓ Pages you select</li>
-                        <li>✓ Database content</li>
-                        <li>✓ Comments and discussions</li>
-                        <li>✓ Page properties and metadata</li>
-                    </ul>
-                </div>
-
-                <div class="form-group">
-                    <label for="notion-sync">Sync Frequency</label>
-                    <select id="notion-sync">
-                        <option value="realtime">Real-time</option>
-                        <option value="15min" selected>Every 15 minutes</option>
-                        <option value="hourly">Hourly</option>
-                        <option value="daily">Daily</option>
-                    </select>
-                </div>
-
-                <div class="form-actions">
-                    <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
-                    <button class="btn-primary" onclick="submitNotionConfig()">Authorize with Notion</button>
-                </div>
-            </div>
-
-            <!-- Confluence Connection Form -->
-            <div id="confluence-form" class="connection-form">
-                <h2>Connect Confluence</h2>
-                <p class="form-description">Connect to your Confluence spaces and documentation</p>
-
-                <div class="form-group">
-                    <label for="confluence-url">Confluence Site URL</label>
-                    <input type="url" id="confluence-url" placeholder="https://your-company.atlassian.net/wiki" required>
-                    <span class="field-hint">Your Atlassian Confluence site address</span>
-                </div>
-
-                <div class="form-group">
-                    <label for="confluence-email">User Email</label>
-                    <input type="email" id="confluence-email" placeholder="you@company.com">
-                    <span class="field-hint">For authentication and permissions</span>
-                </div>
-
-                <div class="form-group">
-                    <label for="confluence-spaces">Spaces to Index (optional)</label>
-                    <input type="text" id="confluence-spaces" placeholder="Engineering, Product, Support">
-                    <span class="field-hint">Leave empty to access all spaces you have access to</span>
-                </div>
-
-                <div class="info-box">
-                    <h4>Permissions Required:</h4>
-                    <ul>
-                        <li>✓ Read Confluence content</li>
-                        <li>✓ View space information</li>
-                        <li>✓ Access user profiles</li>
-                    </ul>
-                </div>
-
-                <div class="form-actions">
-                    <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
-                    <button class="btn-primary" onclick="submitConfluenceConfig()">Authorize with Atlassian</button>
-                </div>
-            </div>
         </div>
     </div>
 

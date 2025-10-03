@@ -1,0 +1,63 @@
+<svg width="1200" height="250" viewBox="0 0 1200 250" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="waveGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.25" />
+      <stop offset="50%" style="stop-color:#8b5cf6;stop-opacity:0.2" />
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:0.25" />
+    </linearGradient>
+    <linearGradient id="waveGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.18" />
+      <stop offset="50%" style="stop-color:#8b5cf6;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:0.18" />
+    </linearGradient>
+    <linearGradient id="waveGradient3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.12" />
+      <stop offset="50%" style="stop-color:#8b5cf6;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:0.12" />
+    </linearGradient>
+
+    <!-- Blur filter for softer edges -->
+    <filter id="blur">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
+    </filter>
+  </defs>
+
+  <!-- Wave 1 - Front (Most Movement) -->
+  <path d="M0,60 Q200,20 400,60 T800,60 Q1000,20 1200,60 L1200,250 L0,250 Z" fill="url(#waveGradient1)" filter="url(#blur)">
+    <animate attributeName="d"
+             dur="7s"
+             repeatCount="indefinite"
+             values="
+               M0,60 Q200,20 400,60 T800,60 Q1000,20 1200,60 L1200,250 L0,250 Z;
+               M0,40 Q200,80 400,40 T800,40 Q1000,80 1200,40 L1200,250 L0,250 Z;
+               M0,70 Q200,30 400,70 T800,70 Q1000,30 1200,70 L1200,250 L0,250 Z;
+               M0,60 Q200,20 400,60 T800,60 Q1000,20 1200,60 L1200,250 L0,250 Z
+             "/>
+  </path>
+
+  <!-- Wave 2 - Middle (Medium Movement) -->
+  <path d="M0,90 Q250,50 500,90 T1000,90 Q1100,50 1200,90 L1200,250 L0,250 Z" fill="url(#waveGradient2)" filter="url(#blur)">
+    <animate attributeName="d"
+             dur="9s"
+             repeatCount="indefinite"
+             values="
+               M0,90 Q250,50 500,90 T1000,90 Q1100,50 1200,90 L1200,250 L0,250 Z;
+               M0,70 Q250,110 500,70 T1000,70 Q1100,110 1200,70 L1200,250 L0,250 Z;
+               M0,100 Q250,60 500,100 T1000,100 Q1100,60 1200,100 L1200,250 L0,250 Z;
+               M0,90 Q250,50 500,90 T1000,90 Q1100,50 1200,90 L1200,250 L0,250 Z
+             "/>
+  </path>
+
+  <!-- Wave 3 - Back (Subtle Movement) -->
+  <path d="M0,130 Q300,90 600,130 T1200,130 L1200,250 L0,250 Z" fill="url(#waveGradient3)" filter="url(#blur)">
+    <animate attributeName="d"
+             dur="11s"
+             repeatCount="indefinite"
+             values="
+               M0,130 Q300,90 600,130 T1200,130 L1200,250 L0,250 Z;
+               M0,110 Q300,150 600,110 T1200,110 L1200,250 L0,250 Z;
+               M0,140 Q300,100 600,140 T1200,140 L1200,250 L0,250 Z;
+               M0,130 Q300,90 600,130 T1200,130 L1200,250 L0,250 Z
+             "/>
+  </path>
+</svg>
