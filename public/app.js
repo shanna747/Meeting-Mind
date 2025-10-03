@@ -19,7 +19,43 @@ function showRegister() {
 
 function showDashboard() {
     showPage('dashboard-page');
+    showDashboardView();
     loadDashboardData();
+}
+
+function showDashboardView() {
+    // Hide all dashboard views
+    document.querySelectorAll('.dashboard-view').forEach(view => {
+        view.classList.remove('active');
+    });
+
+    // Show dashboard view
+    document.getElementById('dashboard-view').classList.add('active');
+
+    // Update nav links
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    document.querySelector('.nav-link[onclick="showDashboardView()"]').classList.add('active');
+}
+
+function showKnowledgeHub() {
+    // Hide all dashboard views
+    document.querySelectorAll('.dashboard-view').forEach(view => {
+        view.classList.remove('active');
+    });
+
+    // Show knowledge hub view
+    document.getElementById('knowledge-hub-view').classList.add('active');
+
+    // Update nav links
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    document.querySelector('.nav-link[onclick="showKnowledgeHub()"]').classList.add('active');
+
+    // Load documents when viewing Knowledge Hub
+    loadKnowledgeHubDocuments();
 }
 
 // Plan selection
@@ -275,21 +311,6 @@ function connectDocumentation() {
     setupFileUpload();
 }
 
-function connectSlack() {
-    openConnectionModal('slack-form');
-}
-
-function connectGoogleSheets() {
-    openConnectionModal('sheets-form');
-}
-
-function connectNotion() {
-    openConnectionModal('notion-form');
-}
-
-function connectConfluence() {
-    openConnectionModal('confluence-form');
-}
 
 // File Upload Handler
 function setupFileUpload() {
@@ -400,127 +421,14 @@ async function submitDocumentation() {
     }
 }
 
-async function submitSlackConfig() {
-    const workspace = document.getElementById('slack-workspace').value;
-    const channels = document.getElementById('slack-channels').value;
-
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/datasources/slack/configure', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ workspace, channels })
-        });
-
-        const data = await response.json();
-        if (response.ok && data.authUrl) {
-            window.location.href = data.authUrl;
-        } else {
-            alert(data.error || 'Failed to configure Slack');
-        }
-    } catch (error) {
-        console.error('Slack configuration error:', error);
-        alert('Failed to configure Slack');
-    }
-}
-
-async function submitSheetsConfig() {
-    const sheetUrl = document.getElementById('sheets-url').value;
-    const refreshFrequency = document.getElementById('sheets-refresh').value;
-
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/datasources/google-sheets/configure', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ sheetUrl, refreshFrequency })
-        });
-
-        const data = await response.json();
-        if (response.ok && data.authUrl) {
-            window.location.href = data.authUrl;
-        } else {
-            alert(data.error || 'Failed to configure Google Sheets');
-        }
-    } catch (error) {
-        console.error('Google Sheets configuration error:', error);
-        alert('Failed to configure Google Sheets');
-    }
-}
-
-async function submitNotionConfig() {
-    const workspace = document.getElementById('notion-workspace').value;
-    const syncFrequency = document.getElementById('notion-sync').value;
-
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/datasources/notion/configure', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ workspace, syncFrequency })
-        });
-
-        const data = await response.json();
-        if (response.ok && data.authUrl) {
-            window.location.href = data.authUrl;
-        } else {
-            alert(data.error || 'Failed to configure Notion');
-        }
-    } catch (error) {
-        console.error('Notion configuration error:', error);
-        alert('Failed to configure Notion');
-    }
-}
-
-async function submitConfluenceConfig() {
-    const siteUrl = document.getElementById('confluence-url').value;
-    const email = document.getElementById('confluence-email').value;
-    const spaces = document.getElementById('confluence-spaces').value;
-
-    if (!siteUrl) {
-        alert('Please provide your Confluence site URL');
-        return;
-    }
-
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/datasources/confluence/configure', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ siteUrl, email, spaces })
-        });
-
-        const data = await response.json();
-        if (response.ok && data.authUrl) {
-            window.location.href = data.authUrl;
-        } else {
-            alert(data.error || 'Failed to configure Confluence');
-        }
-    } catch (error) {
-        console.error('Confluence configuration error:', error);
-        alert('Failed to configure Confluence');
-    }
-}
 
 // Meeting platform connections
 async function connectZoom() {
-    alert('Zoom integration: Install the Meeting Mind app from the Zoom App Marketplace, then configure your webhook URL in the Zoom dashboard.\n\nWebhook URL: ' + window.location.origin + '/api/integrations/zoom/webhook');
+    alert('Zoom integration: Install the Answerly.ai app from the Zoom App Marketplace, then configure your webhook URL in the Zoom dashboard.\n\nWebhook URL: ' + window.location.origin + '/api/integrations/zoom/webhook');
 }
 
 async function connectTeams() {
-    alert('Microsoft Teams integration: Go to your Azure AD portal, register the Meeting Mind app, and configure OAuth permissions.\n\nRedirect URI: ' + window.location.origin + '/api/integrations/teams/auth/callback');
+    alert('Microsoft Teams integration: Go to your Azure AD portal, register the Answerly.ai app, and configure OAuth permissions.\n\nRedirect URI: ' + window.location.origin + '/api/integrations/teams/auth/callback');
 }
 
 async function connectGoogleMeet() {
@@ -582,6 +490,205 @@ function handleTranscriptUpdate(data) {
 
 function showTimeLimitWarning(data) {
     alert(`Meeting time limit approaching! You have ${data.remainingMinutes} minutes left.`);
+}
+
+// Knowledge Hub Functions
+let allDocuments = [];
+let currentFilter = 'all';
+
+async function loadKnowledgeHubDocuments() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/datasources/documents', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        if (data.documents) {
+            allDocuments = data.documents;
+            updateKnowledgeHubStats();
+            displayDocuments(allDocuments);
+        }
+    } catch (error) {
+        console.error('Error loading documents:', error);
+    }
+}
+
+function updateKnowledgeHubStats() {
+    const active = allDocuments.filter(doc => doc.status === 'active').length;
+    const archived = allDocuments.filter(doc => doc.status === 'archived').length;
+    const totalSize = allDocuments.reduce((sum, doc) => sum + (doc.size || 0), 0);
+
+    document.getElementById('total-documents').textContent = allDocuments.length;
+    document.getElementById('active-documents').textContent = active;
+    document.getElementById('archived-documents').textContent = archived;
+    document.getElementById('total-size').textContent = (totalSize / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+function filterDocuments(filter) {
+    currentFilter = filter;
+
+    // Update button states
+    document.querySelectorAll('.section-actions button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    let filteredDocs = allDocuments;
+    if (filter === 'active') {
+        filteredDocs = allDocuments.filter(doc => doc.status === 'active');
+    } else if (filter === 'archived') {
+        filteredDocs = allDocuments.filter(doc => doc.status === 'archived');
+    }
+
+    displayDocuments(filteredDocs);
+}
+
+function displayDocuments(documents) {
+    const tbody = document.getElementById('documents-table-body');
+
+    if (documents.length === 0) {
+        tbody.innerHTML = `
+            <tr class="empty-state-row">
+                <td colspan="7" style="text-align: center; padding: 40px;">
+                    <div class="empty-state">
+                        <p>No documents found.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = documents.map(doc => `
+        <tr data-doc-id="${doc.id}">
+            <td>
+                <div class="doc-name">
+                    <span class="doc-icon">${getDocIcon(doc.source)}</span>
+                    <span>${doc.name}</span>
+                </div>
+            </td>
+            <td>${doc.source}</td>
+            <td><span class="category-badge">${doc.category || 'General'}</span></td>
+            <td>${formatFileSize(doc.size || 0)}</td>
+            <td>${formatDate(doc.createdAt)}</td>
+            <td>
+                <span class="status-badge ${doc.status}">${doc.status}</span>
+            </td>
+            <td>
+                <div class="action-buttons">
+                    ${doc.status === 'active' ?
+                        `<button class="btn-icon" onclick="archiveDocument('${doc.id}')" title="Archive">
+                            📦
+                        </button>` :
+                        `<button class="btn-icon" onclick="unarchiveDocument('${doc.id}')" title="Unarchive">
+                            📂
+                        </button>`
+                    }
+                    <button class="btn-icon btn-danger" onclick="deleteDocument('${doc.id}')" title="Delete">
+                        🗑️
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function getDocIcon(source) {
+    const icons = {
+        'documentation': '📚',
+        'slack': '💬',
+        'google-sheets': '📊',
+        'notion': '📝',
+        'confluence': '🌐',
+        'upload': '📄'
+    };
+    return icons[source] || '📄';
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+async function archiveDocument(docId) {
+    if (!confirm('Archive this document? It will no longer be used in AI responses.')) {
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/datasources/documents/${docId}/archive`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.ok) {
+            await loadKnowledgeHubDocuments();
+        } else {
+            alert('Failed to archive document');
+        }
+    } catch (error) {
+        console.error('Error archiving document:', error);
+        alert('Failed to archive document');
+    }
+}
+
+async function unarchiveDocument(docId) {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/datasources/documents/${docId}/unarchive`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.ok) {
+            await loadKnowledgeHubDocuments();
+        } else {
+            alert('Failed to unarchive document');
+        }
+    } catch (error) {
+        console.error('Error unarchiving document:', error);
+        alert('Failed to unarchive document');
+    }
+}
+
+async function deleteDocument(docId) {
+    if (!confirm('Are you sure you want to permanently delete this document? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/datasources/documents/${docId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.ok) {
+            await loadKnowledgeHubDocuments();
+        } else {
+            alert('Failed to delete document');
+        }
+    } catch (error) {
+        console.error('Error deleting document:', error);
+        alert('Failed to delete document');
+    }
 }
 
 // Check if user is already logged in
