@@ -30,7 +30,7 @@
             <!-- Hero Section -->
             <section class="hero">
                 <div class="hero-badge">✨ AI-Powered Knowledge Assistant</div>
-                <h2 class="hero-title">Get Real-Time Answers<br>During Every Meeting</h2>
+                <h2 class="hero-title"><strong>Get Real-Time <span class="gradient-text">Answers</span><br>During Every Meeting</strong></h2>
                 <p class="hero-subtitle">Answerly AI listens in real time meetings and pulls answers directly from your product docs, so you can focus on winning the conversation.</p>
                 <div class="hero-cta">
                     <button class="btn-cta" onclick="showRegister()">Try It Free</button>
@@ -252,7 +252,7 @@
 
                         <div class="connections-grid">
                             <!-- Company Knowledge Base -->
-                            <div class="connection-card">
+                            <div class="connection-card" data-source="documentation">
                                 <div class="connection-header">
                                     <div class="connection-icon">📚</div>
                                     <h3>Company Knowledge Base</h3>
@@ -262,105 +262,16 @@
                                     <span class="status-indicator"></span>
                                     <span>Not Connected</span>
                                 </div>
-                                <button class="btn-primary" onclick="connectDocumentation()">Connect</button>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Section 2: Meeting Platform Integrations -->
-                    <section class="meeting-platforms-section">
-                        <div class="section-header">
-                            <div>
-                                <h2>🔗 Meeting Platform Integrations</h2>
-                                <p class="section-subtitle">Connect to your meeting software to enable real-time AI assistance</p>
-                            </div>
-                        </div>
-
-                        <div class="platforms-grid">
-                            <!-- Zoom -->
-                            <div class="platform-card">
-                                <div class="platform-header">
-                                    <div class="platform-logo">
-                                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                                            <rect width="48" height="48" rx="8" fill="#2D8CFF"/>
-                                            <path d="M16 16h10v6l6-6v18l-6-6v6H16V16z" fill="white"/>
-                                        </svg>
-                                    </div>
-                                    <h3>Zoom</h3>
-                                </div>
-                                <p class="platform-description">Connect Meeting Mind to your Zoom meetings for real-time transcription and AI insights</p>
-                                <div class="platform-features">
-                                    <span class="feature-tag">✓ Real-time transcription</span>
-                                    <span class="feature-tag">✓ AI-powered Q&A</span>
-                                    <span class="feature-tag">✓ Action items</span>
-                                </div>
-                                <div class="connection-status disconnected">
-                                    <span class="status-indicator"></span>
-                                    <span>Not Connected</span>
-                                </div>
-                                <button class="btn-primary" onclick="connectZoom()">Connect Zoom</button>
-                            </div>
-
-                            <!-- Microsoft Teams -->
-                            <div class="platform-card">
-                                <div class="platform-header">
-                                    <div class="platform-logo">
-                                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                                            <rect width="48" height="48" rx="8" fill="#5059C9"/>
-                                            <text x="24" y="32" font-size="20" fill="white" text-anchor="middle" font-weight="bold">T</text>
-                                        </svg>
-                                    </div>
-                                    <h3>Microsoft Teams</h3>
-                                </div>
-                                <p class="platform-description">Integrate with Microsoft Teams for seamless meeting intelligence and collaboration</p>
-                                <div class="platform-features">
-                                    <span class="feature-tag">✓ Real-time transcription</span>
-                                    <span class="feature-tag">✓ AI-powered Q&A</span>
-                                    <span class="feature-tag">✓ Action items</span>
-                                </div>
-                                <div class="connection-status disconnected">
-                                    <span class="status-indicator"></span>
-                                    <span>Not Connected</span>
-                                </div>
-                                <button class="btn-primary" onclick="connectTeams()">Connect Teams</button>
-                            </div>
-
-                            <!-- Google Meet -->
-                            <div class="platform-card">
-                                <div class="platform-header">
-                                    <div class="platform-logo">
-                                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                                            <rect width="48" height="48" rx="8" fill="#00897B"/>
-                                            <path d="M16 16h16v16H16z" fill="white" opacity="0.8"/>
-                                            <circle cx="24" cy="24" r="4" fill="white"/>
-                                        </svg>
-                                    </div>
-                                    <h3>Google Meet</h3>
-                                </div>
-                                <p class="platform-description">Enable Answerly.ai on Google Meet for instant access to company knowledge</p>
-                                <div class="platform-features">
-                                    <span class="feature-tag">✓ Real-time transcription</span>
-                                    <span class="feature-tag">✓ AI-powered Q&A</span>
-                                    <span class="feature-tag">✓ Action items</span>
-                                </div>
-                                <div class="connection-status disconnected">
-                                    <span class="status-indicator"></span>
-                                    <span>Not Connected</span>
-                                </div>
-                                <button class="btn-primary" onclick="connectGoogleMeet()">Connect Google Meet</button>
-                            </div>
-                        </div>
-
-                        <!-- Active Meetings -->
-                        <div class="active-meetings-box">
-                            <h3>Active Meetings</h3>
-                            <div id="active-meetings-list" class="meetings-list">
-                                <div class="empty-state">
-                                    <p>No active meetings. Connect a platform and start a meeting to begin.</p>
+                                <div class="connection-actions">
+                                    <button class="btn-primary" onclick="connectDocumentation()">Connect</button>
+                                    <button class="btn-answerly" onclick="activateAnswerly()" style="display: none;">
+                                        🎤 Turn On Answerly
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </section>
+
                 </div>
             </div>
             </div>
@@ -489,6 +400,128 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- View Document Modal -->
+    <div id="view-document-modal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <span class="modal-close" onclick="closeViewDocumentModal()">&times;</span>
+
+            <h2 id="view-doc-title-header">Document Title</h2>
+            <p class="form-description" id="view-doc-metadata">Document metadata</p>
+
+            <div style="background: var(--background-alt); padding: 20px; border-radius: 8px; margin-top: 20px; max-height: 600px; overflow-y: auto;">
+                <pre id="view-doc-content" style="margin: 0; font-family: 'Courier New', monospace; font-size: 14px; white-space: pre-wrap; word-wrap: break-word;">Loading document content...</pre>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn-secondary" onclick="closeViewDocumentModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Answerly Activation Modal -->
+    <div id="answerly-modal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <span class="modal-close" onclick="closeAnswerlyModal()">&times;</span>
+
+            <h2 id="answerly-modal-title">🎤 Activate Answerly</h2>
+            <p class="form-description">Answerly will listen to your conversation and provide real-time answers from your knowledge base</p>
+
+            <div id="answerly-inactive" style="text-align: center; padding: 40px 20px;">
+                <div style="font-size: 80px; margin-bottom: 20px;">🎤</div>
+                <h3 style="margin-bottom: 16px;">Ready to Start Listening</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 30px;">
+                    Click the button below to activate Answerly. It will listen to your conversation and provide instant answers from your knowledge base.
+                </p>
+                <button class="btn-cta" onclick="startAnswerly()" style="font-size: 18px; padding: 16px 40px;">
+                    Start Listening
+                </button>
+            </div>
+
+            <div id="answerly-active" style="display: none;">
+                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, var(--primary-light), var(--accent-light)); border-radius: 12px; margin-bottom: 24px;">
+                    <div class="listening-indicator" style="display: inline-block;">
+                        <span style="font-size: 48px;">🎤</span>
+                        <div style="margin-top: 8px;">
+                            <span style="display: inline-block; width: 10px; height: 10px; background: #10b981; border-radius: 50%; animation: pulse 1.5s ease-in-out infinite;"></span>
+                            <span style="margin-left: 8px; font-weight: 600; color: var(--primary-color);">LISTENING...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: white; border: 2px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 12px; font-size: 16px;">💬 Live Conversation</h4>
+                    <div id="live-transcript" style="min-height: 100px; max-height: 200px; overflow-y: auto; padding: 12px; background: var(--background-alt); border-radius: 8px; font-size: 14px; color: var(--text-secondary);">
+                        Waiting for conversation...
+                    </div>
+                </div>
+
+                <div style="background: white; border: 2px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 12px; font-size: 16px;">✨ Answerly Responses</h4>
+                    <div id="answerly-responses" style="min-height: 150px; max-height: 250px; overflow-y: auto;">
+                        <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                            No questions detected yet. Answerly will automatically respond when it hears relevant questions.
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: center;">
+                    <button class="btn-secondary" onclick="stopAnswerly()" style="padding: 12px 32px; font-size: 16px;">
+                        🛑 Stop Listening
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Document Modal -->
+    <div id="edit-document-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="modal-close" onclick="closeEditDocumentModal()">&times;</span>
+
+            <h2>Edit Document</h2>
+            <p class="form-description">Update document information and content</p>
+
+            <div class="form-group">
+                <label for="edit-doc-title">Document Title</label>
+                <input type="text" id="edit-doc-title" placeholder="Document title">
+            </div>
+
+            <div class="form-group">
+                <label for="edit-doc-category">Category</label>
+                <select id="edit-doc-category">
+                    <option value="api">API Documentation</option>
+                    <option value="user-guide">User Guides</option>
+                    <option value="technical">Technical Documentation</option>
+                    <option value="help">Help Articles</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="edit-doc-tags">Tags (comma-separated)</label>
+                <input type="text" id="edit-doc-tags" placeholder="product, features, setup">
+            </div>
+
+            <div class="form-group">
+                <label for="edit-doc-status">Status</label>
+                <select id="edit-doc-status">
+                    <option value="active">Active</option>
+                    <option value="archived">Archived</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="edit-doc-content">Document Content</label>
+                <textarea id="edit-doc-content" rows="15" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-family: 'Courier New', monospace; font-size: 14px;" placeholder="Document content (for text-based files)"></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn-secondary" onclick="closeEditDocumentModal()">Cancel</button>
+                <button class="btn-primary" onclick="saveDocumentEdits()">Save Changes</button>
+            </div>
         </div>
     </div>
 
