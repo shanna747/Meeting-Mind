@@ -254,8 +254,17 @@ function updateConnectionUI(connections) {
             status.classList.add('connected');
             status.innerHTML = '<span class="status-indicator"></span><span>Connected</span>';
 
-            const button = card.querySelector('button');
-            button.textContent = 'Configure';
+            const actions = card.querySelector('.connection-actions');
+            const button = actions?.querySelector('.btn-primary');
+
+            // For documentation, change to "Add" and show Answerly button
+            if (source === 'documentation') {
+                if (button) button.textContent = 'Add';
+                const answerlyBtn = actions?.querySelector('.btn-answerly');
+                if (answerlyBtn) answerlyBtn.style.display = 'block';
+            } else {
+                if (button) button.textContent = 'Configure';
+            }
         }
     });
 }
@@ -409,7 +418,10 @@ async function submitDocumentation() {
 
         const data = await response.json();
         if (response.ok) {
-            alert('Documentation connected successfully!');
+            const message = data.totalFiles > data.filesUploaded
+                ? `${data.filesUploaded} file(s) added successfully! Total: ${data.totalFiles} files`
+                : 'Documentation connected successfully!';
+            alert(message);
             closeConnectionModal();
             loadConnectionStatus();
         } else {
@@ -421,19 +433,6 @@ async function submitDocumentation() {
     }
 }
 
-
-// Meeting platform connections
-async function connectZoom() {
-    alert('Zoom integration: Install the Answerly.ai app from the Zoom App Marketplace, then configure your webhook URL in the Zoom dashboard.\n\nWebhook URL: ' + window.location.origin + '/api/integrations/zoom/webhook');
-}
-
-async function connectTeams() {
-    alert('Microsoft Teams integration: Go to your Azure AD portal, register the Answerly.ai app, and configure OAuth permissions.\n\nRedirect URI: ' + window.location.origin + '/api/integrations/teams/auth/callback');
-}
-
-async function connectGoogleMeet() {
-    alert('Google Meet integration: Create a Google Cloud project, enable the Google Meet API, and configure OAuth credentials.\n\nRedirect URI: ' + window.location.origin + '/api/integrations/google-meet/auth/callback');
-}
 
 function showUpgrade() {
     if (confirm('Would you like to upgrade your plan?')) {
@@ -566,19 +565,25 @@ function displayDocuments(documents) {
         <tr data-doc-id="${doc.id}">
             <td>
                 <div class="doc-name">
-                    <span class="doc-icon">${getDocIcon(doc.source)}</span>
-                    <span>${doc.name}</span>
+                    <span class="doc-icon">${getDocIcon(doc.originalName || doc.filename)}</span>
+                    <span>${doc.originalName || doc.filename || 'Untitled'}</span>
                 </div>
             </td>
-            <td>${doc.source}</td>
+            <td>Documentation</td>
             <td><span class="category-badge">${doc.category || 'General'}</span></td>
             <td>${formatFileSize(doc.size || 0)}</td>
-            <td>${formatDate(doc.createdAt)}</td>
+            <td>${formatDate(doc.uploadedAt)}</td>
             <td>
-                <span class="status-badge ${doc.status}">${doc.status}</span>
+                <span class="status-badge ${doc.status || 'active'}">${doc.status || 'active'}</span>
             </td>
             <td>
                 <div class="action-buttons">
+                    <button class="btn-icon" onclick="viewDocument('${doc.id}')" title="View">
+                        👁️
+                    </button>
+                    <button class="btn-icon" onclick="editDocument('${doc.id}')" title="Edit">
+                        ✏️
+                    </button>
                     ${doc.status === 'active' ?
                         `<button class="btn-icon" onclick="archiveDocument('${doc.id}')" title="Archive">
                             📦
@@ -596,16 +601,21 @@ function displayDocuments(documents) {
     `).join('');
 }
 
-function getDocIcon(source) {
+function getDocIcon(filename) {
+    if (!filename) return '📄';
+
+    const ext = filename.toLowerCase().split('.').pop();
     const icons = {
-        'documentation': '📚',
-        'slack': '💬',
-        'google-sheets': '📊',
-        'notion': '📝',
-        'confluence': '🌐',
-        'upload': '📄'
+        'pdf': '📕',
+        'doc': '📘',
+        'docx': '📘',
+        'txt': '📄',
+        'md': '📝',
+        'csv': '📊',
+        'xlsx': '📊',
+        'xls': '📊'
     };
-    return icons[source] || '📄';
+    return icons[ext] || '📄';
 }
 
 function formatFileSize(bytes) {
@@ -618,6 +628,153 @@ function formatDate(dateString) {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+async function viewDocument(docId) {
+    const doc = allDocuments.find(d => d.id === docId);
+    if (!doc) {
+        alert('Document not found');
+        return;
+    }
+
+    // Set document title and metadata
+    document.getElementById('view-doc-title-header').textContent = doc.originalName || doc.filename;
+    document.getElementById('view-doc-metadata').innerHTML = `
+        <strong>Category:</strong> ${doc.category || 'General'} &nbsp;|&nbsp;
+        <strong>Tags:</strong> ${doc.tags?.join(', ') || 'None'} &nbsp;|&nbsp;
+        <strong>Size:</strong> ${formatFileSize(doc.size || 0)} &nbsp;|&nbsp;
+        <strong>Uploaded:</strong> ${formatDate(doc.uploadedAt)} &nbsp;|&nbsp;
+        <strong>Status:</strong> ${doc.status || 'active'}
+    `;
+
+    // Show loading message
+    const contentArea = document.getElementById('view-doc-content');
+    contentArea.textContent = 'Loading document content...';
+
+    // Show the modal
+    document.getElementById('view-document-modal').classList.add('active');
+
+    // Fetch document content from server
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/datasources/documents/${docId}/content`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            contentArea.textContent = data.content || '[No content available]';
+        } else {
+            contentArea.textContent = '[Error loading document content]';
+        }
+    } catch (error) {
+        console.error('Error loading document content:', error);
+        contentArea.textContent = '[Error loading document content]';
+    }
+}
+
+function closeViewDocumentModal() {
+    document.getElementById('view-document-modal').classList.remove('active');
+}
+
+let currentEditingDocId = null;
+
+async function editDocument(docId) {
+    const doc = allDocuments.find(d => d.id === docId);
+    if (!doc) {
+        alert('Document not found');
+        return;
+    }
+
+    currentEditingDocId = docId;
+
+    // Populate the edit form
+    document.getElementById('edit-doc-title').value = doc.originalName || doc.filename || '';
+    document.getElementById('edit-doc-category').value = doc.category || 'other';
+    document.getElementById('edit-doc-tags').value = doc.tags?.join(', ') || '';
+    document.getElementById('edit-doc-status').value = doc.status || 'active';
+
+    // Show loading message in content area
+    const contentArea = document.getElementById('edit-doc-content');
+    contentArea.value = 'Loading document content...';
+
+    // Show the modal
+    document.getElementById('edit-document-modal').classList.add('active');
+
+    // Fetch document content from server
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/datasources/documents/${docId}/content`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            contentArea.value = data.content || '';
+
+            // Disable editing for binary files
+            if (data.isBinary) {
+                contentArea.disabled = true;
+                contentArea.style.backgroundColor = '#f5f5f5';
+                contentArea.style.cursor = 'not-allowed';
+            } else {
+                contentArea.disabled = false;
+                contentArea.style.backgroundColor = 'white';
+                contentArea.style.cursor = 'text';
+            }
+        } else {
+            contentArea.value = '[Error loading document content]';
+        }
+    } catch (error) {
+        console.error('Error loading document content:', error);
+        contentArea.value = '[Error loading document content]';
+    }
+}
+
+function closeEditDocumentModal() {
+    document.getElementById('edit-document-modal').classList.remove('active');
+    currentEditingDocId = null;
+}
+
+async function saveDocumentEdits() {
+    if (!currentEditingDocId) {
+        alert('No document selected for editing');
+        return;
+    }
+
+    const title = document.getElementById('edit-doc-title').value;
+    const category = document.getElementById('edit-doc-category').value;
+    const tags = document.getElementById('edit-doc-tags').value;
+    const status = document.getElementById('edit-doc-status').value;
+    const content = document.getElementById('edit-doc-content').value;
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/datasources/documents/${currentEditingDocId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ title, category, tags, status, content })
+        });
+
+        if (response.ok) {
+            alert('Document updated successfully!');
+            closeEditDocumentModal();
+            await loadKnowledgeHubDocuments();
+        } else {
+            const data = await response.json();
+            alert(data.error || 'Failed to update document');
+        }
+    } catch (error) {
+        console.error('Error updating document:', error);
+        alert('Failed to update document');
+    }
 }
 
 async function archiveDocument(docId) {
@@ -689,6 +846,143 @@ async function deleteDocument(docId) {
         console.error('Error deleting document:', error);
         alert('Failed to delete document');
     }
+}
+
+// Answerly Functions
+let answerlyActive = false;
+let recognition = null;
+let answerlyInterval = null;
+
+function activateAnswerly() {
+    document.getElementById('answerly-modal').classList.add('active');
+}
+
+function closeAnswerlyModal() {
+    if (answerlyActive) {
+        if (!confirm('Answerly is currently listening. Are you sure you want to close?')) {
+            return;
+        }
+        stopAnswerly();
+    }
+    document.getElementById('answerly-modal').classList.remove('active');
+}
+
+function startAnswerly() {
+    // Hide inactive view, show active view
+    document.getElementById('answerly-inactive').style.display = 'none';
+    document.getElementById('answerly-active').style.display = 'block';
+    answerlyActive = true;
+
+    // Initialize speech recognition
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+
+        recognition.onresult = (event) => {
+            let transcript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                transcript += event.results[i][0].transcript;
+            }
+
+            // Update live transcript
+            const transcriptDiv = document.getElementById('live-transcript');
+            transcriptDiv.textContent = transcript || 'Listening...';
+            transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+
+            // Check for questions and generate answers
+            if (event.results[event.results.length - 1].isFinal) {
+                detectAndAnswerQuestions(transcript);
+            }
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+        };
+
+        recognition.start();
+    } else {
+        alert('Speech recognition is not supported in your browser. Please use Chrome or Edge.');
+        stopAnswerly();
+    }
+}
+
+function stopAnswerly() {
+    answerlyActive = false;
+    if (recognition) {
+        recognition.stop();
+        recognition = null;
+    }
+
+    // Reset UI
+    document.getElementById('answerly-inactive').style.display = 'block';
+    document.getElementById('answerly-active').style.display = 'none';
+    document.getElementById('live-transcript').textContent = 'Waiting for conversation...';
+}
+
+async function detectAndAnswerQuestions(text) {
+    // Simple question detection (can be enhanced with AI)
+    const questionWords = ['what', 'how', 'when', 'where', 'who', 'why', 'can', 'does', 'is', 'are'];
+    const sentences = text.toLowerCase().split(/[.!?]+/);
+
+    for (const sentence of sentences) {
+        const isQuestion = questionWords.some(word => sentence.trim().startsWith(word)) || sentence.includes('?');
+
+        if (isQuestion && sentence.trim().length > 10) {
+            // Generate answer from knowledge base
+            await generateAnswer(sentence.trim());
+        }
+    }
+}
+
+async function generateAnswer(question) {
+    const responsesDiv = document.getElementById('answerly-responses');
+
+    // Clear "No questions" message if present
+    if (responsesDiv.textContent.includes('No questions detected')) {
+        responsesDiv.innerHTML = '';
+    }
+
+    // Add question to UI
+    const qaBlock = document.createElement('div');
+    qaBlock.style.cssText = 'margin-bottom: 16px; padding: 16px; background: var(--background-alt); border-radius: 8px; border-left: 4px solid var(--primary-color);';
+    qaBlock.innerHTML = `
+        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">❓ ${question}</div>
+        <div style="color: var(--text-secondary); font-size: 14px;">
+            <span style="display: inline-block; animation: pulse 1s infinite;">💭 Generating answer...</span>
+        </div>
+    `;
+    responsesDiv.insertBefore(qaBlock, responsesDiv.firstChild);
+
+    // Simulate AI answer generation (replace with actual AI call)
+    try {
+        // This is a placeholder - you would call your AI/search backend here
+        const answer = await simulateAIAnswer(question);
+
+        qaBlock.innerHTML = `
+            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">❓ ${question}</div>
+            <div style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
+                ✅ ${answer}
+            </div>
+        `;
+    } catch (error) {
+        qaBlock.innerHTML = `
+            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">❓ ${question}</div>
+            <div style="color: var(--error-color); font-size: 14px;">
+                ❌ Error generating answer
+            </div>
+        `;
+    }
+
+    responsesDiv.scrollTop = 0;
+}
+
+async function simulateAIAnswer(question) {
+    // Placeholder function - replace with actual AI/knowledge base search
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    return "Based on your knowledge base, here's the answer to your question. This is a demo response that would be replaced with actual AI-generated content from your uploaded documents.";
 }
 
 // Check if user is already logged in
