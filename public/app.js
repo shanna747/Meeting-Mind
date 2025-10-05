@@ -17,6 +17,10 @@ function showRegister() {
     showPage('register-page');
 }
 
+function showHowItWorks() {
+    showPage('how-it-works-page');
+}
+
 function showDashboard() {
     showPage('dashboard-page');
     showDashboardView();
@@ -37,6 +41,99 @@ function showDashboardView() {
         link.classList.remove('active');
     });
     document.querySelector('.nav-link[onclick="showDashboardView()"]').classList.add('active');
+}
+
+function showUserProfile() {
+    // Hide all dashboard views
+    document.querySelectorAll('.dashboard-view').forEach(view => {
+        view.classList.remove('active');
+    });
+
+    // Show user profile view
+    document.getElementById('user-profile-view').classList.add('active');
+
+    // Update nav links - deactivate all
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+
+    // Load user profile data
+    if (currentUser) {
+        document.getElementById('profile-name').textContent = currentUser.name || currentUser.email;
+        document.getElementById('profile-email').textContent = currentUser.email;
+
+        // Display plan name
+        const planName = currentUser.subscription || 'free';
+        let planDisplay = 'Starter';
+        if (planName === 'pro') {
+            planDisplay = 'Pro';
+        } else if (planName === 'business') {
+            planDisplay = 'Business';
+        }
+        document.getElementById('profile-plan').textContent = planDisplay;
+
+        // Set meeting limit based on plan
+        let meetingLimit = '15 minutes';
+        if (planName === 'pro') {
+            meetingLimit = '2 hours';
+        } else if (planName === 'business') {
+            meetingLimit = 'Unlimited';
+        }
+        document.getElementById('profile-meeting-limit').textContent = meetingLimit;
+    }
+}
+
+async function deleteAccount() {
+    const confirmText = document.getElementById('delete-confirm-input').value;
+
+    if (confirmText !== 'DELETE') {
+        alert('Please type DELETE in the box to confirm account deletion.');
+        return;
+    }
+
+    if (!confirm('Are you absolutely sure? This action cannot be undone and all your data will be permanently deleted.')) {
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/auth/delete-account', {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.ok) {
+            alert('Your account has been successfully deleted.');
+            handleLogout();
+        } else {
+            const error = await response.json();
+            alert(error.error || 'Failed to delete account. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error deleting account:', error);
+        alert('Failed to delete account. Please try again.');
+    }
+}
+
+function showMeetingNotes() {
+    // Hide all dashboard views
+    document.querySelectorAll('.dashboard-view').forEach(view => {
+        view.classList.remove('active');
+    });
+
+    // Show meeting notes view
+    document.getElementById('meeting-notes-view').classList.add('active');
+
+    // Update nav links
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    document.querySelector('.nav-link[onclick="showMeetingNotes()"]').classList.add('active');
+
+    // Load meeting notes
+    loadMeetingNotes();
 }
 
 function showKnowledgeHub() {
@@ -260,13 +357,33 @@ function updateConnectionUI(connections) {
             // For documentation, change to "Add" and show Answerly button
             if (source === 'documentation') {
                 if (button) button.textContent = 'Add';
-                const answerlyBtn = actions?.querySelector('.btn-answerly');
+
+                // Update Agent card
+                const answerlyBtn = document.getElementById('answerly-button');
+                const agentDescription = document.getElementById('agent-description');
+
                 if (answerlyBtn) answerlyBtn.style.display = 'block';
+                if (agentDescription) {
+                    agentDescription.style.display = 'block';
+                    agentDescription.textContent = 'Go live with answerly on every call for your very own assistant, and to capture meeting questions.';
+                }
             } else {
                 if (button) button.textContent = 'Configure';
             }
         }
     });
+
+    // Check if documentation is NOT connected and update Agent card accordingly
+    if (!connections.documentation || !connections.documentation.connected) {
+        const answerlyBtn = document.getElementById('answerly-button');
+        const agentDescription = document.getElementById('agent-description');
+
+        if (answerlyBtn) answerlyBtn.style.display = 'none';
+        if (agentDescription) {
+            agentDescription.style.display = 'block';
+            agentDescription.textContent = 'Add Product documentation to activate answerly';
+        }
+    }
 }
 
 // Modal Management
@@ -577,28 +694,42 @@ function displayDocuments(documents) {
                 <span class="status-badge ${doc.status || 'active'}">${doc.status || 'active'}</span>
             </td>
             <td>
-                <div class="action-buttons">
-                    <button class="btn-icon" onclick="viewDocument('${doc.id}')" title="View">
-                        👁️
-                    </button>
-                    <button class="btn-icon" onclick="editDocument('${doc.id}')" title="Edit">
-                        ✏️
-                    </button>
-                    ${doc.status === 'active' ?
-                        `<button class="btn-icon" onclick="archiveDocument('${doc.id}')" title="Archive">
-                            📦
-                        </button>` :
-                        `<button class="btn-icon" onclick="unarchiveDocument('${doc.id}')" title="Unarchive">
-                            📂
-                        </button>`
-                    }
-                    <button class="btn-icon btn-danger" onclick="deleteDocument('${doc.id}')" title="Delete">
-                        🗑️
-                    </button>
-                </div>
+                <select class="action-select" onchange="handleDocumentAction(this, '${doc.id}', '${doc.status}')">
+                    <option value="">Select Action</option>
+                    <option value="view">View</option>
+                    <option value="edit">Edit</option>
+                    ${doc.status === 'active' ? '<option value="archive">Archive</option>' : '<option value="unarchive">Unarchive</option>'}
+                    <option value="delete">Delete</option>
+                </select>
             </td>
         </tr>
     `).join('');
+}
+
+function handleDocumentAction(select, docId, status) {
+    const action = select.value;
+    if (!action) return;
+
+    switch(action) {
+        case 'view':
+            viewDocument(docId);
+            break;
+        case 'edit':
+            editDocument(docId);
+            break;
+        case 'archive':
+            archiveDocument(docId);
+            break;
+        case 'unarchive':
+            unarchiveDocument(docId);
+            break;
+        case 'delete':
+            deleteDocument(docId);
+            break;
+    }
+
+    // Reset dropdown
+    select.value = '';
 }
 
 function getDocIcon(filename) {
@@ -852,6 +983,12 @@ async function deleteDocument(docId) {
 let answerlyActive = false;
 let recognition = null;
 let answerlyInterval = null;
+let currentMeetingId = null;
+let meetingTranscript = '';
+let meetingQuestions = [];
+let meetingTimer = null;
+let meetingStartTime = null;
+let meetingElapsedSeconds = 0;
 
 function activateAnswerly() {
     document.getElementById('answerly-modal').classList.add('active');
@@ -867,11 +1004,40 @@ function closeAnswerlyModal() {
     document.getElementById('answerly-modal').classList.remove('active');
 }
 
-function startAnswerly() {
+async function startAnswerly() {
+    // Create a new meeting session
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch('/api/meeting-notes/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                title: `Meeting - ${new Date().toLocaleString()}`
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            currentMeetingId = data.meetingId;
+            meetingTranscript = '';
+            meetingQuestions = [];
+        }
+    } catch (error) {
+        console.error('Error starting meeting session:', error);
+    }
+
     // Hide inactive view, show active view
     document.getElementById('answerly-inactive').style.display = 'none';
     document.getElementById('answerly-active').style.display = 'block';
     answerlyActive = true;
+
+    // Start timer
+    meetingStartTime = Date.now();
+    meetingElapsedSeconds = 0;
+    startMeetingTimer();
 
     // Initialize speech recognition
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -894,6 +1060,7 @@ function startAnswerly() {
 
             // Check for questions and generate answers
             if (event.results[event.results.length - 1].isFinal) {
+                meetingTranscript += ' ' + transcript;
                 detectAndAnswerQuestions(transcript);
             }
         };
@@ -909,17 +1076,65 @@ function startAnswerly() {
     }
 }
 
-function stopAnswerly() {
+async function stopAnswerly() {
     answerlyActive = false;
     if (recognition) {
         recognition.stop();
         recognition = null;
     }
 
+    const savedMeetingId = currentMeetingId;
+
+    // Save meeting notes
+    if (currentMeetingId) {
+        const token = localStorage.getItem('token');
+        try {
+            await fetch(`/api/meeting-notes/${currentMeetingId}/end`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    transcript: meetingTranscript
+                })
+            });
+        } catch (error) {
+            console.error('Error ending meeting session:', error);
+        }
+    }
+
     // Reset UI
     document.getElementById('answerly-inactive').style.display = 'block';
     document.getElementById('answerly-active').style.display = 'none';
     document.getElementById('live-transcript').textContent = 'Waiting for conversation...';
+
+    // Clear meeting data
+    currentMeetingId = null;
+    meetingTranscript = '';
+    meetingQuestions = [];
+
+    // Stop timer
+    if (meetingTimer) {
+        clearInterval(meetingTimer);
+        meetingTimer = null;
+    }
+    meetingElapsedSeconds = 0;
+    document.getElementById('meeting-timer').textContent = '00:00';
+    document.getElementById('time-limit-warning').style.display = 'none';
+
+    // Close modal
+    closeAnswerlyModal();
+
+    // Navigate to Meeting Notes and show the saved meeting details
+    if (savedMeetingId) {
+        showView('meeting-notes-view');
+        await loadMeetingNotes();
+        // Automatically open the details of the meeting that just ended
+        setTimeout(() => {
+            viewMeetingDetails(savedMeetingId);
+        }, 300);
+    }
 }
 
 async function detectAndAnswerQuestions(text) {
@@ -956,10 +1171,11 @@ async function generateAnswer(question) {
     `;
     responsesDiv.insertBefore(qaBlock, responsesDiv.firstChild);
 
-    // Simulate AI answer generation (replace with actual AI call)
+    // Generate answer from knowledge base
     try {
-        // This is a placeholder - you would call your AI/search backend here
         const answer = await simulateAIAnswer(question);
+        const answered = !answer.includes('couldn\'t find') && !answer.includes('error');
+        const sourceDoc = answer.match(/Based on "([^"]+)"/)?.[1] || '';
 
         qaBlock.innerHTML = `
             <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">❓ ${question}</div>
@@ -967,6 +1183,31 @@ async function generateAnswer(question) {
                 ✅ ${answer}
             </div>
         `;
+
+        // Save question to meeting notes
+        if (currentMeetingId) {
+            const token = localStorage.getItem('token');
+            try {
+                await fetch(`/api/meeting-notes/${currentMeetingId}/questions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        question,
+                        answered,
+                        answer,
+                        sourceDocument: sourceDoc,
+                        needsDocumentation: !answered
+                    })
+                });
+
+                meetingQuestions.push({ question, answered, answer });
+            } catch (error) {
+                console.error('Error saving question:', error);
+            }
+        }
     } catch (error) {
         qaBlock.innerHTML = `
             <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">❓ ${question}</div>
@@ -979,10 +1220,354 @@ async function generateAnswer(question) {
     responsesDiv.scrollTop = 0;
 }
 
+async function loadMeetingNotes() {
+    const token = localStorage.getItem('token');
+
+    try {
+        const response = await fetch('/api/meeting-notes?status=completed', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load meeting notes');
+        }
+
+        const data = await response.json();
+        const meetings = data.meetings || [];
+
+        // Update stats
+        let totalQuestions = 0;
+        let answeredQuestions = 0;
+        let needsDocs = 0;
+
+        meetings.forEach(meeting => {
+            totalQuestions += meeting.summary.totalQuestions || 0;
+            answeredQuestions += meeting.summary.answeredQuestions || 0;
+            needsDocs += meeting.summary.needsDocumentation || 0;
+        });
+
+        document.getElementById('total-meetings').textContent = meetings.length;
+        document.getElementById('total-meeting-questions').textContent = totalQuestions;
+        document.getElementById('answered-meeting-questions').textContent = answeredQuestions;
+        document.getElementById('needs-documentation').textContent = needsDocs;
+
+        // Update table
+        const tbody = document.getElementById('meetings-table-body');
+        tbody.innerHTML = '';
+
+        if (meetings.length === 0) {
+            tbody.innerHTML = `
+                <tr class="empty-state-row">
+                    <td colspan="7" style="text-align: center; padding: 40px;">
+                        <div class="empty-state">
+                            <p>No meeting notes yet. Activate Answerly during a meeting to start tracking questions.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        } else {
+            meetings.forEach(meeting => {
+                const row = document.createElement('tr');
+                const date = new Date(meeting.startTime).toLocaleDateString();
+                const duration = formatDuration(meeting.duration || 0);
+
+                row.innerHTML = `
+                    <td>${meeting.title}</td>
+                    <td>${date}</td>
+                    <td>${duration}</td>
+                    <td>${meeting.summary.totalQuestions || 0}</td>
+                    <td>${meeting.summary.answeredQuestions || 0}</td>
+                    <td>${meeting.summary.needsDocumentation || 0}</td>
+                    <td>
+                        <select class="action-select" onchange="handleMeetingAction(this, '${meeting._id}')">
+                            <option value="">Select Action</option>
+                            <option value="view">View</option>
+                            <option value="delete">Delete</option>
+                        </select>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading meeting notes:', error);
+    }
+}
+
+function formatDuration(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (minutes === 0) return `${secs}s`;
+    return `${minutes}m ${secs}s`;
+}
+
+function handleMeetingAction(select, meetingId) {
+    const action = select.value;
+    if (!action) return;
+
+    switch(action) {
+        case 'view':
+            viewMeetingDetails(meetingId);
+            break;
+        case 'delete':
+            deleteMeeting(meetingId);
+            break;
+    }
+
+    // Reset dropdown
+    select.value = '';
+}
+
+async function viewMeetingDetails(meetingId) {
+    const token = localStorage.getItem('token');
+
+    try {
+        const response = await fetch(`/api/meeting-notes/${meetingId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load meeting details');
+        }
+
+        const data = await response.json();
+        const meeting = data.meeting;
+
+        let questionsHTML = '';
+        if (meeting.questions && meeting.questions.length > 0) {
+            questionsHTML = meeting.questions.map((q, index) => `
+                <div style="margin-bottom: 16px; padding: 16px; background: ${q.answered ? '#ecfdf5' : '#fef2f2'}; border: 2px solid ${q.answered ? '#10b981' : '#ef4444'}; border-radius: 8px;">
+                    <div style="font-weight: 600; margin-bottom: 8px; font-size: 15px; color: #1f2937;">
+                        ${q.answered ? '✅' : '❌'} Question ${index + 1}: ${q.question}
+                    </div>
+                    ${q.answer ? `
+                        <div style="margin-top: 12px; padding: 12px; background: white; border-radius: 6px; border-left: 4px solid var(--primary-color);">
+                            <div style="font-weight: 600; font-size: 13px; color: var(--primary-color); margin-bottom: 6px;">Answer:</div>
+                            <div style="font-size: 14px; color: #4b5563; line-height: 1.6;">${q.answer}</div>
+                        </div>
+                    ` : '<div style="margin-top: 8px; font-size: 14px; color: #6b7280; font-style: italic;">No answer provided</div>'}
+                    ${q.needsDocumentation ? '<div style="margin-top: 12px; padding: 6px 12px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 4px; display: inline-block; font-size: 13px; color: #92400e;">📝 Needs Documentation</div>' : ''}
+                    <div style="margin-top: 8px; font-size: 12px; color: #9ca3af;">
+                        ${new Date(q.timestamp).toLocaleString()}
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            questionsHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px 20px; background: var(--background-alt); border-radius: 8px;">No questions recorded for this meeting.</p>';
+        }
+
+        const detailsHTML = `
+            <h2 style="margin-bottom: 8px;">${meeting.title}</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">
+                📅 ${new Date(meeting.startTime).toLocaleString()} |
+                ⏱️ ${formatDuration(meeting.duration || 0)} |
+                💬 ${meeting.summary.totalQuestions || 0} Questions
+            </p>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px;">
+                <div style="padding: 12px; background: var(--background-alt); border-radius: 8px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: 600; color: var(--primary-color);">${meeting.summary.totalQuestions || 0}</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">Total Questions</div>
+                </div>
+                <div style="padding: 12px; background: #ecfdf5; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: 600; color: #10b981;">${meeting.summary.answeredQuestions || 0}</div>
+                    <div style="font-size: 12px; color: #065f46;">Answered</div>
+                </div>
+                <div style="padding: 12px; background: #fef3c7; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: 600; color: #f59e0b;">${meeting.summary.needsDocumentation || 0}</div>
+                    <div style="font-size: 12px; color: #92400e;">Needs Docs</div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 16px; font-size: 18px;">Questions & Answers</h3>
+            <div style="max-height: 500px; overflow-y: auto;">
+                ${questionsHTML}
+            </div>
+        `;
+
+        document.getElementById('meeting-details-content').innerHTML = detailsHTML;
+        document.getElementById('meeting-details-modal').classList.add('active');
+    } catch (error) {
+        console.error('Error viewing meeting details:', error);
+        alert('Failed to load meeting details');
+    }
+}
+
+function closeMeetingDetailsModal() {
+    document.getElementById('meeting-details-modal').classList.remove('active');
+}
+
+async function deleteMeeting(meetingId) {
+    if (!confirm('Are you sure you want to delete this meeting note?')) {
+        return;
+    }
+
+    const token = localStorage.getItem('token');
+
+    try {
+        const response = await fetch(`/api/meeting-notes/${meetingId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.ok) {
+            loadMeetingNotes();
+        } else {
+            alert('Failed to delete meeting note');
+        }
+    } catch (error) {
+        console.error('Error deleting meeting:', error);
+        alert('Failed to delete meeting note');
+    }
+}
+
 async function simulateAIAnswer(question) {
-    // Placeholder function - replace with actual AI/knowledge base search
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    return "Based on your knowledge base, here's the answer to your question. This is a demo response that would be replaced with actual AI-generated content from your uploaded documents.";
+    try {
+        const token = localStorage.getItem('token');
+
+        // First, try to get documents from the knowledge base
+        const docsResponse = await fetch('/api/datasources/documents', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!docsResponse.ok) {
+            throw new Error('Failed to fetch documents');
+        }
+
+        const docsData = await docsResponse.json();
+        const documents = docsData.documents || [];
+
+        if (documents.length === 0) {
+            return "I couldn't find any documents in your knowledge base. Please upload some documents first.";
+        }
+
+        // Simple keyword-based search through uploaded documents
+        const questionLower = question.toLowerCase();
+        const keywords = questionLower.split(' ').filter(word => word.length > 3);
+
+        let bestMatch = null;
+        let bestScore = 0;
+
+        for (const doc of documents) {
+            if (doc.status !== 'active') continue;
+
+            // Try to get document content
+            try {
+                const contentResponse = await fetch(`/api/datasources/documents/${doc.id}/content`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (contentResponse.ok) {
+                    const contentData = await contentResponse.json();
+                    const content = contentData.content || '';
+                    const contentLower = content.toLowerCase();
+
+                    // Score based on keyword matches
+                    let score = 0;
+                    keywords.forEach(keyword => {
+                        const matches = (contentLower.match(new RegExp(keyword, 'g')) || []).length;
+                        score += matches;
+                    });
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMatch = {
+                            doc,
+                            content,
+                            score
+                        };
+                    }
+                }
+            } catch (err) {
+                console.error('Error reading document:', err);
+            }
+        }
+
+        if (bestMatch && bestMatch.score > 0) {
+            // Extract relevant snippet (first 500 characters that contain keywords)
+            const content = bestMatch.content;
+            const contentLower = content.toLowerCase();
+
+            let snippet = content.substring(0, 500);
+            for (const keyword of keywords) {
+                const index = contentLower.indexOf(keyword);
+                if (index !== -1) {
+                    const start = Math.max(0, index - 200);
+                    const end = Math.min(content.length, index + 300);
+                    snippet = content.substring(start, end);
+                    break;
+                }
+            }
+
+            return `Based on "${bestMatch.doc.originalName}":\n\n${snippet}...\n\n(Note: Using basic text search. For AI-powered answers, please add OpenAI API credits.)`;
+        } else {
+            return `I searched through ${documents.length} document(s) but couldn't find relevant information for your question. The keywords I looked for were: ${keywords.join(', ')}.\n\nTry rephrasing your question or upload more relevant documents.`;
+        }
+
+    } catch (error) {
+        console.error('Error querying knowledge base:', error);
+        return "Sorry, I encountered an error while searching your knowledge base. Please make sure you have uploaded documents to the Company Knowledge Base.";
+    }
+}
+
+// Meeting Timer Functions
+function startMeetingTimer() {
+    // Get subscription limits
+    const subscription = currentUser?.subscription || 'free';
+    const limits = {
+        'free': 15 * 60,      // 15 minutes in seconds
+        'pro': 120 * 60,      // 2 hours in seconds
+        'business': Infinity  // Unlimited
+    };
+    const timeLimit = limits[subscription];
+
+    meetingTimer = setInterval(() => {
+        meetingElapsedSeconds++;
+        updateTimerDisplay(meetingElapsedSeconds, timeLimit);
+
+        // Auto-stop if time limit reached (except for business plan)
+        if (timeLimit !== Infinity && meetingElapsedSeconds >= timeLimit) {
+            alert('Meeting time limit reached for your plan. Please upgrade to continue longer meetings.');
+            stopAnswerly();
+        }
+    }, 1000);
+}
+
+function updateTimerDisplay(seconds, timeLimit) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    const timeString = `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+    document.getElementById('meeting-timer').textContent = timeString;
+
+    // Show warning when approaching time limit
+    if (timeLimit !== Infinity) {
+        const remainingSeconds = timeLimit - seconds;
+        const warningDiv = document.getElementById('time-limit-warning');
+        const warningText = document.getElementById('time-remaining-text');
+
+        if (remainingSeconds <= 120) { // 2 minutes remaining
+            warningDiv.style.display = 'block';
+            const remainingMins = Math.floor(remainingSeconds / 60);
+            const remainingSecs = remainingSeconds % 60;
+            warningText.textContent = `⚠️ ${remainingMins}:${String(remainingSecs).padStart(2, '0')} remaining`;
+            warningText.style.color = remainingSeconds <= 60 ? 'var(--error-color)' : 'var(--warning-color)';
+        } else {
+            warningDiv.style.display = 'none';
+        }
+    }
 }
 
 // Check if user is already logged in

@@ -133,4 +133,23 @@ router.put('/subscription', async (req, res) => {
   }
 });
 
+// Delete account
+router.delete('/delete-account', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const currentUser = await authService.verifyToken(token);
+    await authService.deleteAccount(currentUser.id);
+
+    res.json({ success: true, message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Account deletion error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
