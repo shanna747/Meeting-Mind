@@ -200,6 +200,28 @@ class AuthService {
     const users = await User.find({});
     return users.map(user => user.toSafeObject());
   }
+
+  /**
+   * Delete user account
+   */
+  async deleteAccount(userId) {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Delete user from database
+    await User.findByIdAndDelete(userId);
+
+    // Remove all sessions for this user
+    for (const [token, sessionUserId] of this.sessions.entries()) {
+      if (sessionUserId === userId) {
+        this.sessions.delete(token);
+      }
+    }
+
+    return { success: true };
+  }
 }
 
 module.exports = new AuthService();
