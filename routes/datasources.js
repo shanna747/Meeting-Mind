@@ -1,18 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const authService = require('../services/authService');
+const fileStorage = require('../services/fileStorage');
 const multer = require('multer');
 
 // Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/documentation/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
-  }
-});
+// Use memory storage for S3, disk storage for local
+const storage = fileStorage.useS3
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (req, file, cb) => {
+        cb(null, 'uploads/documentation/');
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + '-' + file.originalname);
+      }
+    });
 
 const upload = multer({
   storage,
@@ -68,18 +72,18 @@ router.post('/documentation/upload', upload.array('files', 10), async (req, res)
     const existingDocs = user.dataSources?.documentation || {};
     const existingFiles = existingDocs.files || [];
 
-    // Append new files to existing files
-    const newFiles = files.map(f => ({
-      id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
-      filename: f.filename,
-      originalName: f.originalname,
-      path: f.path,
-      size: f.size,
-      uploadedAt: new Date().toISOString(),
-      category,
-      tags: tags ? tags.split(',').map(t => t.trim()) : [],
-      status: 'active'
-    }));
+    // Upload files using fileStorage service
+    const newFiles = await Promise.all(
+      files.map(async (f) => {
+        const uploadedFile = await fileStorage.uploadFile(f, 'documentation');
+        return {
+          ...uploadedFile,
+          category,
+          tags: tags ? tags.split(',').map(t => t.trim()) : [],
+          status: 'active'
+        };
+      })
+    );
 
     // Store documentation metadata with appended files
     await authService.updateDataSource(user.id, 'documentation', {
@@ -156,7 +160,7 @@ router.get('/documents/:docId/content', async (req, res) => {
     }
 
     try {
-      const content = await fs.readFile(doc.path, 'utf-8');
+      const content = await fileStorage.getFileContent(doc.path);
       res.json({ content, isBinary: false });
     } catch (err) {
       res.json({
