@@ -3,6 +3,7 @@ const router = express.Router();
 const authService = require('../services/authService');
 const fileStorage = require('../services/fileStorage');
 const multer = require('multer');
+const pdfParse = require('pdf-parse');
 
 // Configure multer for file uploads
 // Use memory storage for S3, disk storage for local
@@ -43,13 +44,24 @@ router.get('/status', async (req, res) => {
 
     const user = await authService.verifyToken(token);
 
-    res.json(user.dataSources || {
-      documentation: { connected: false },
-      slack: { connected: false },
-      googleSheets: { connected: false },
-      notion: { connected: false },
-      confluence: { connected: false }
-    });
+    // Check if documentation has actual files uploaded
+    const docFiles = user.dataSources?.documentation?.files || [];
+    const hasDocuments = docFiles.length > 0;
+
+    // Build response with actual connection status based on uploaded documents
+    const status = {
+      documentation: {
+        connected: hasDocuments,
+        files: docFiles,
+        ...(user.dataSources?.documentation || {})
+      },
+      slack: user.dataSources?.slack || { connected: false },
+      googleSheets: user.dataSources?.googleSheets || { connected: false },
+      notion: user.dataSources?.notion || { connected: false },
+      confluence: user.dataSources?.confluence || { connected: false }
+    };
+
+    res.json(status);
   } catch (error) {
     console.error('Error getting data source status:', error);
     res.status(500).json({ error: error.message });
@@ -148,21 +160,32 @@ router.get('/documents/:docId/content', async (req, res) => {
     const fs = require('fs').promises;
     const path = require('path');
 
-    // Check file extension to determine if it's a text file
+    // Check file extension to determine file type
     const ext = path.extname(doc.originalName || doc.filename || '').toLowerCase();
     const textExtensions = ['.txt', '.md', '.markdown', '.json', '.xml', '.csv', '.log'];
 
-    if (!textExtensions.includes(ext)) {
+    try {
+      // Handle PDF files
+      if (ext === '.pdf') {
+        const dataBuffer = await fs.readFile(doc.path);
+        const pdfData = await pdfParse(dataBuffer);
+        const extractedText = pdfData.text || '[No text could be extracted from PDF]';
+        return res.json({ content: extractedText, isBinary: false });
+      }
+
+      // Handle text files
+      if (textExtensions.includes(ext)) {
+        const content = await fileStorage.getFileContent(doc.path);
+        return res.json({ content, isBinary: false });
+      }
+
+      // Handle other binary files (DOCX, etc.)
       return res.json({
         content: `[${ext.toUpperCase() || 'Binary'} file - Cannot display binary content]\n\nThis is a ${ext || 'binary'} file. To edit the content:\n1. Download the original file\n2. Edit it with appropriate software (e.g., Microsoft Word for .docx)\n3. Re-upload the edited version\n\nFile: ${doc.originalName || doc.filename}\nSize: ${(doc.size / 1024).toFixed(2)} KB`,
         isBinary: true
       });
-    }
-
-    try {
-      const content = await fileStorage.getFileContent(doc.path);
-      res.json({ content, isBinary: false });
     } catch (err) {
+      console.error('Error reading file content:', err);
       res.json({
         content: '[Error reading file - file may be corrupted or inaccessible]',
         isBinary: false
