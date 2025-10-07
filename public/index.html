@@ -390,13 +390,93 @@
                 </div>
             </div>
             <div class="secondary-nav">
-                <button class="nav-link active" onclick="showDashboardView()">Dashboard</button>
+                <button class="nav-link active" onclick="showAnswerlyDashboard()">Dashboard</button>
                 <button class="nav-link" onclick="showKnowledgeHub()">Knowledge Hub</button>
                 <button class="nav-link" onclick="showMeetingNotes()">Meeting Notes</button>
             </div>
         </header>
 
         <main class="dashboard-main">
+            <!-- Onboarding View -->
+            <div id="onboarding-view" class="dashboard-view">
+                <div class="onboarding-container">
+                    <div class="onboarding-card">
+                        <div class="onboarding-logo">
+                            <img src="logo.svg" alt="Answerly.ai Logo" width="80" height="80">
+                        </div>
+                        <h1>Welcome to Answerly.ai!</h1>
+                        <p class="onboarding-subtitle">Let's get started by uploading your first document</p>
+
+                        <div class="onboarding-upload-area">
+                            <div class="file-drop-zone" id="onboarding-drop-zone">
+                                <div class="upload-text">Upload</div>
+                                <h3>Upload Your First Document</h3>
+                                <p>Drag and drop or click to browse</p>
+                                <p class="file-types">Supported: PDF, DOCX, TXT, MD</p>
+                                <input type="file" id="onboarding-files" multiple accept=".pdf,.docx,.txt,.md" style="display: none;">
+                            </div>
+                            <div id="onboarding-file-list" class="file-list"></div>
+                        </div>
+
+                        <div class="onboarding-actions">
+                            <button class="btn-primary btn-large" onclick="submitOnboardingDocuments()" id="onboarding-submit-btn" disabled>
+                                Continue to Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Answerly Dashboard View -->
+            <div id="answerly-dashboard-view" class="dashboard-view">
+                <div class="answerly-dashboard-container">
+                    <div class="answerly-hero">
+                        <h1 id="answerly-hero-title">Ready to Start Listening?</h1>
+                        <p id="answerly-hero-subtitle">Upload documents to the Knowledge Hub to activate Answerly</p>
+
+                        <div class="answerly-controls">
+                            <button class="btn-answerly-large" id="answerly-activate-btn" onclick="activateAnswerly()">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 12px;">
+                                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1 1v3h2v-3c3.53-.55 6-3.63 6-7h-2c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.37 2.47 6.45 6 7z"/>
+                                </svg>
+                                Go Live
+                            </button>
+                        </div>
+
+                        <div class="answerly-stats-grid">
+                            <div class="answerly-stat-card">
+                                <div class="stat-icon">📚</div>
+                                <div class="stat-value" id="answerly-docs-count">0</div>
+                                <div class="stat-label">Active Documents</div>
+                            </div>
+                            <div class="answerly-stat-card">
+                                <div class="stat-icon">⏱️</div>
+                                <div class="stat-value" id="answerly-time-limit">15 min</div>
+                                <div class="stat-label">Time Limit</div>
+                            </div>
+                            <div class="answerly-stat-card">
+                                <div class="stat-icon">💬</div>
+                                <div class="stat-value" id="answerly-questions-count">0</div>
+                                <div class="stat-label">Questions Answered</div>
+                            </div>
+                        </div>
+
+                        <div class="answerly-quick-actions">
+                            <button class="action-card" onclick="showKnowledgeHub()">
+                                <div class="action-icon">📖</div>
+                                <h3>Manage Documents</h3>
+                                <p>Add or edit your knowledge base</p>
+                            </button>
+                            <button class="action-card" onclick="showMeetingNotes()">
+                                <div class="action-icon">📝</div>
+                                <h3>View Meeting Notes</h3>
+                                <p>Review captured questions</p>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- User Profile View -->
             <div id="user-profile-view" class="dashboard-view">
                 <div class="dashboard-container">
@@ -445,49 +525,6 @@
                 </div>
             </div>
 
-            <!-- Dashboard View -->
-            <div id="dashboard-view" class="dashboard-view active">
-                <div class="dashboard-container">
-                    <section class="dashboard-welcome" style="text-align: center;">
-                        <h1>Welcome to Your Dashboard</h1>
-                        <p>Configure your Company Brain and connect to meeting platforms</p>
-                    </section>
-
-                    <div class="dashboard-sections">
-                        <!-- Cards Container -->
-                        <div style="display: flex; gap: 24px;">
-                            <!-- Company Knowledge Base Card -->
-                            <div class="connection-card" data-source="documentation" style="border: none; flex: 1; max-width: 50%; text-align: center; align-items: center;">
-                                <h3 style="width: 100%; margin-bottom: 16px;">Product Documentation</h3>
-                                <p style="width: 100%; color: var(--text-secondary); margin-bottom: 16px; font-size: 14px;">
-                                    Upload documents to create Answerly's knowledge base. You may view, edit or delete docs in the Knowledge Hub.
-                                </p>
-                                <div class="connection-status disconnected" style="width: 100%; justify-content: center;">
-                                    <span class="status-indicator"></span>
-                                    <span>Not Connected</span>
-                                </div>
-                                <div class="connection-actions" style="width: 100%; justify-content: center;">
-                                    <button class="btn-primary" onclick="connectDocumentation()">Connect</button>
-                                </div>
-                            </div>
-
-                            <!-- Agent Card -->
-                            <div class="connection-card" style="border: 2px solid var(--border-color); flex: 1; max-width: 50%; text-align: center; align-items: center;">
-                                <h3 style="width: 100%; margin-bottom: 16px;">Agent</h3>
-                                <p id="agent-description" style="width: 100%; color: var(--text-secondary); margin-bottom: 16px; font-size: 14px;">
-                                    Add Product documentation to activate answerly
-                                </p>
-                                <div class="connection-actions" style="width: 100%; justify-content: center;">
-                                    <button class="btn-answerly" id="answerly-button" onclick="activateAnswerly()" style="display: none;">
-                                        Turn On Answerly
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-            </div>
-            </div>
 
             <!-- Knowledge Hub View -->
             <div id="knowledge-hub-view" class="dashboard-view">
@@ -506,6 +543,9 @@
                         </div>
 
                         <div class="knowledge-hub-stats">
+                            <div class="stat-card" style="display: flex; align-items: center; justify-content: center;">
+                                <button class="btn-primary" onclick="connectDocumentation()" style="width: 100%; height: 50%; border: none; font-size: 16px; font-weight: 600;">+ Documents</button>
+                            </div>
                             <div class="stat-card">
                                 <div class="stat-value" id="total-documents">0</div>
                                 <div class="stat-label">Total Documents</div>
