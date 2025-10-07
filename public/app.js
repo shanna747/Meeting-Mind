@@ -283,8 +283,9 @@ function loadDashboardData() {
         // Load active meetings
         loadActiveMeetings();
 
-        // Load connection status
+        // Load connection status and documents
         loadConnectionStatus();
+        loadKnowledgeHubDocuments();
     }
 }
 
@@ -342,8 +343,11 @@ async function loadConnectionStatus() {
 }
 
 function updateConnectionUI(connections) {
-    // Update each connection card based on status
+    // Update each connection card based on status, but NOT documentation
+    // Documentation status is determined by document count, not API status
     Object.keys(connections).forEach(source => {
+        if (source === 'documentation') return; // Skip documentation, handled by updateAgentCardVisibility
+
         const card = document.querySelector(`[data-source="${source}"]`);
         if (card && connections[source].connected) {
             const status = card.querySelector('.connection-status');
@@ -353,37 +357,9 @@ function updateConnectionUI(connections) {
 
             const actions = card.querySelector('.connection-actions');
             const button = actions?.querySelector('.btn-primary');
-
-            // For documentation, change to "Add" and show Answerly button
-            if (source === 'documentation') {
-                if (button) button.textContent = 'Add';
-
-                // Update Agent card
-                const answerlyBtn = document.getElementById('answerly-button');
-                const agentDescription = document.getElementById('agent-description');
-
-                if (answerlyBtn) answerlyBtn.style.display = 'block';
-                if (agentDescription) {
-                    agentDescription.style.display = 'block';
-                    agentDescription.textContent = 'Go live with answerly on every call for your very own assistant, and to capture meeting questions.';
-                }
-            } else {
-                if (button) button.textContent = 'Configure';
-            }
+            if (button) button.textContent = 'Configure';
         }
     });
-
-    // Check if documentation is NOT connected and update Agent card accordingly
-    if (!connections.documentation || !connections.documentation.connected) {
-        const answerlyBtn = document.getElementById('answerly-button');
-        const agentDescription = document.getElementById('agent-description');
-
-        if (answerlyBtn) answerlyBtn.style.display = 'none';
-        if (agentDescription) {
-            agentDescription.style.display = 'block';
-            agentDescription.textContent = 'Add Product documentation to activate answerly';
-        }
-    }
 }
 
 // Modal Management
@@ -540,7 +516,7 @@ async function submitDocumentation() {
                 : 'Documentation connected successfully!';
             alert(message);
             closeConnectionModal();
-            loadConnectionStatus();
+            await loadKnowledgeHubDocuments();
         } else {
             alert(data.error || 'Failed to connect documentation');
         }
@@ -626,9 +602,59 @@ async function loadKnowledgeHubDocuments() {
             allDocuments = data.documents;
             updateKnowledgeHubStats();
             displayDocuments(allDocuments);
+            updateAgentCardVisibility();
         }
     } catch (error) {
         console.error('Error loading documents:', error);
+    }
+}
+
+function updateAgentCardVisibility() {
+    const agentCard = document.getElementById('agent-card');
+    const getStartedSection = document.getElementById('get-started-section');
+    const docCard = document.querySelector('[data-source="documentation"]');
+    const answerlyButton = document.getElementById('answerly-button');
+
+    // Hide Agent if no documents exist
+    if (allDocuments.length === 0) {
+        if (agentCard) agentCard.style.display = 'none';
+        if (answerlyButton) answerlyButton.style.display = 'none';
+        if (getStartedSection) getStartedSection.style.display = 'block';
+
+        // Ensure documentation card shows "Not Connected"
+        if (docCard) {
+            const status = docCard.querySelector('.connection-status');
+            const button = docCard.querySelector('.btn-answerly, .btn-primary');
+
+            if (status) {
+                status.classList.remove('connected');
+                status.classList.add('disconnected');
+                status.innerHTML = '<span class="status-indicator"></span><span>Not Connected</span>';
+            }
+            if (button) {
+                button.textContent = 'Connect';
+            }
+        }
+    } else {
+        // Show Agent if documents exist
+        if (agentCard) agentCard.style.display = 'flex';
+        if (answerlyButton) answerlyButton.style.display = 'block';
+        if (getStartedSection) getStartedSection.style.display = 'none';
+
+        // Ensure documentation card shows "Connected"
+        if (docCard) {
+            const status = docCard.querySelector('.connection-status');
+            const button = docCard.querySelector('.btn-answerly, .btn-primary');
+
+            if (status) {
+                status.classList.remove('disconnected');
+                status.classList.add('connected');
+                status.innerHTML = '<span class="status-indicator"></span><span>Connected</span>';
+            }
+            if (button) {
+                button.textContent = 'Add';
+            }
+        }
     }
 }
 
@@ -924,6 +950,7 @@ async function archiveDocument(docId) {
 
         if (response.ok) {
             await loadKnowledgeHubDocuments();
+            updateAgentCardVisibility();
         } else {
             alert('Failed to archive document');
         }
@@ -945,6 +972,7 @@ async function unarchiveDocument(docId) {
 
         if (response.ok) {
             await loadKnowledgeHubDocuments();
+            updateAgentCardVisibility();
         } else {
             alert('Failed to unarchive document');
         }
@@ -970,6 +998,7 @@ async function deleteDocument(docId) {
 
         if (response.ok) {
             await loadKnowledgeHubDocuments();
+            updateAgentCardVisibility();
         } else {
             alert('Failed to delete document');
         }
@@ -991,7 +1020,20 @@ let meetingStartTime = null;
 let meetingElapsedSeconds = 0;
 
 function activateAnswerly() {
-    document.getElementById('answerly-modal').classList.add('active');
+    // Show floating pop-up instead of modal
+    document.getElementById('answerly-popup').classList.add('active');
+    // Start listening
+    startAnswerly();
+}
+
+function closeAnswerlyPopup() {
+    if (answerlyActive) {
+        if (!confirm('Answerly is currently listening. Are you sure you want to close?')) {
+            return;
+        }
+        stopAnswerly();
+    }
+    document.getElementById('answerly-popup').classList.remove('active');
 }
 
 function closeAnswerlyModal() {
@@ -1120,8 +1162,23 @@ async function stopAnswerly() {
         meetingTimer = null;
     }
     meetingElapsedSeconds = 0;
-    document.getElementById('meeting-timer').textContent = '00:00';
-    document.getElementById('time-limit-warning').style.display = 'none';
+
+    // Reset modal timer
+    const meetingTimerEl = document.getElementById('meeting-timer');
+    if (meetingTimerEl) {
+        meetingTimerEl.textContent = '00:00';
+    }
+
+    // Reset popup timer
+    const popupTimerEl = document.getElementById('popup-timer');
+    if (popupTimerEl) {
+        popupTimerEl.textContent = '00:00';
+    }
+
+    const warningDiv = document.getElementById('time-limit-warning');
+    if (warningDiv) {
+        warningDiv.style.display = 'none';
+    }
 
     // Close modal
     closeAnswerlyModal();
@@ -1138,8 +1195,8 @@ async function stopAnswerly() {
 }
 
 async function detectAndAnswerQuestions(text) {
-    // Simple question detection (can be enhanced with AI)
-    const questionWords = ['what', 'how', 'when', 'where', 'who', 'why', 'can', 'does', 'is', 'are'];
+    // Simple question detection - trigger on specific keywords
+    const questionWords = ['how', 'will', 'can', 'what', 'when', 'want', 'does', 'if'];
     const sentences = text.toLowerCase().split(/[.!?]+/);
 
     for (const sentence of sentences) {
@@ -1154,35 +1211,65 @@ async function detectAndAnswerQuestions(text) {
 
 async function generateAnswer(question) {
     const responsesDiv = document.getElementById('answerly-responses');
+    const popupBody = document.getElementById('answerly-popup-body');
 
-    // Clear "No questions" message if present
-    if (responsesDiv.textContent.includes('No questions detected')) {
+    // Clear initial text in popup
+    if (popupBody.querySelector('.conversation-flow-text')) {
+        popupBody.innerHTML = '';
+    }
+
+    // Clear "No questions" message if present in modal
+    if (responsesDiv && responsesDiv.textContent.includes('No questions detected')) {
         responsesDiv.innerHTML = '';
     }
 
-    // Add question to UI
-    const qaBlock = document.createElement('div');
-    qaBlock.style.cssText = 'margin-bottom: 16px; padding: 16px; background: var(--background-alt); border-radius: 8px; border-left: 4px solid var(--primary-color);';
-    qaBlock.innerHTML = `
-        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">❓ ${question}</div>
-        <div style="color: var(--text-secondary); font-size: 14px;">
-            <span style="display: inline-block; animation: pulse 1s infinite;">💭 Generating answer...</span>
-        </div>
+    // Add question to modal UI
+    if (responsesDiv) {
+        const qaBlock = document.createElement('div');
+        qaBlock.style.cssText = 'margin-bottom: 16px; padding: 16px; background: var(--background-alt); border-radius: 8px; border-left: 4px solid var(--primary-color);';
+        qaBlock.innerHTML = `
+            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">❓ ${question}</div>
+            <div style="color: var(--text-secondary); font-size: 14px;">
+                <span style="display: inline-block; animation: pulse 1s infinite;">💭 Generating answer...</span>
+            </div>
+        `;
+        responsesDiv.insertBefore(qaBlock, responsesDiv.firstChild);
+    }
+
+    // Add question to popup
+    const popupQA = document.createElement('div');
+    popupQA.className = 'popup-qa-item';
+    popupQA.innerHTML = `
+        <div class="popup-question">❓ ${question}</div>
+        <div class="popup-answer">💭 Searching...</div>
     `;
-    responsesDiv.insertBefore(qaBlock, responsesDiv.firstChild);
+    popupBody.insertBefore(popupQA, popupBody.firstChild);
 
     // Generate answer from knowledge base
     try {
         const answer = await simulateAIAnswer(question);
-        const answered = !answer.includes('couldn\'t find') && !answer.includes('error');
+        const answered = !answer.includes('couldn\'t find') && !answer.includes('error') && !answer.includes('I searched through');
         const sourceDoc = answer.match(/Based on "([^"]+)"/)?.[1] || '';
 
-        qaBlock.innerHTML = `
-            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">❓ ${question}</div>
-            <div style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
-                ✅ ${answer}
-            </div>
+        // Update modal
+        if (responsesDiv) {
+            const qaBlock = responsesDiv.firstChild;
+            qaBlock.innerHTML = `
+                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">❓ ${question}</div>
+                <div style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
+                    ${answered ? '✅' : ''} ${answer}
+                </div>
+            `;
+        }
+
+        // Update popup
+        popupQA.innerHTML = `
+            <div class="popup-question">${answered ? '✅' : ''} ${question}</div>
+            <div class="popup-answer">${answer}</div>
         `;
+
+        // Auto-scroll popup to top
+        popupBody.scrollTop = 0;
 
         // Save question to meeting notes
         if (currentMeetingId) {
@@ -1209,15 +1296,27 @@ async function generateAnswer(question) {
             }
         }
     } catch (error) {
-        qaBlock.innerHTML = `
-            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">❓ ${question}</div>
-            <div style="color: var(--error-color); font-size: 14px;">
-                ❌ Error generating answer
-            </div>
+        // Update modal
+        if (responsesDiv) {
+            const qaBlock = responsesDiv.firstChild;
+            qaBlock.innerHTML = `
+                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">❓ ${question}</div>
+                <div style="color: var(--error-color); font-size: 14px;">
+                    ❌ Error generating answer
+                </div>
+            `;
+        }
+
+        // Update popup
+        popupQA.innerHTML = `
+            <div class="popup-question">❓ ${question}</div>
+            <div class="popup-answer" style="color: var(--error-color);">❌ Error generating answer</div>
         `;
     }
 
-    responsesDiv.scrollTop = 0;
+    if (responsesDiv) {
+        responsesDiv.scrollTop = 0;
+    }
 }
 
 async function loadMeetingNotes() {
@@ -1340,17 +1439,15 @@ async function viewMeetingDetails(meetingId) {
         let questionsHTML = '';
         if (meeting.questions && meeting.questions.length > 0) {
             questionsHTML = meeting.questions.map((q, index) => `
-                <div style="margin-bottom: 16px; padding: 16px; background: ${q.answered ? '#ecfdf5' : '#fef2f2'}; border: 2px solid ${q.answered ? '#10b981' : '#ef4444'}; border-radius: 8px;">
-                    <div style="font-weight: 600; margin-bottom: 8px; font-size: 15px; color: #1f2937;">
-                        ${q.answered ? '✅' : '❌'} Question ${index + 1}: ${q.question}
+                <div style="margin-bottom: 16px; padding: 16px; background: white; border: 2px solid var(--border-color); border-left: 4px solid ${q.answered ? 'var(--primary-color)' : '#ef4444'}; border-radius: 8px;">
+                    <div style="margin-bottom: 8px; font-size: 15px; color: #1f2937; line-height: 1.6;">
+                        ${q.answered ? '✅ ' : ''}<strong>Question ${index + 1}:</strong> ${q.question}
                     </div>
                     ${q.answer ? `
-                        <div style="margin-top: 12px; padding: 12px; background: white; border-radius: 6px; border-left: 4px solid var(--primary-color);">
-                            <div style="font-weight: 600; font-size: 13px; color: var(--primary-color); margin-bottom: 6px;">Answer:</div>
-                            <div style="font-size: 14px; color: #4b5563; line-height: 1.6;">${q.answer}</div>
+                        <div style="margin-top: 12px; font-size: 15px; color: #4b5563; line-height: 1.6;">
+                            <strong>Answer:</strong> ${q.answer}
                         </div>
                     ` : '<div style="margin-top: 8px; font-size: 14px; color: #6b7280; font-style: italic;">No answer provided</div>'}
-                    ${q.needsDocumentation ? '<div style="margin-top: 12px; padding: 6px 12px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 4px; display: inline-block; font-size: 13px; color: #92400e;">📝 Needs Documentation</div>' : ''}
                     <div style="margin-top: 8px; font-size: 12px; color: #9ca3af;">
                         ${new Date(q.timestamp).toLocaleString()}
                     </div>
@@ -1451,12 +1548,20 @@ async function simulateAIAnswer(question) {
             return "I couldn't find any documents in your knowledge base. Please upload some documents first.";
         }
 
-        // Simple keyword-based search through uploaded documents
+        // Enhanced keyword-based search - search for ALL words in the question
         const questionLower = question.toLowerCase();
-        const keywords = questionLower.split(' ').filter(word => word.length > 3);
+        // Remove common stop words but keep most words
+        const stopWords = ['a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or', 'but'];
+        const keywords = questionLower
+            .replace(/[^\w\s]/g, ' ') // Remove punctuation
+            .split(/\s+/)
+            .filter(word => word.length > 2 && !stopWords.includes(word));
+
+        console.log('Searching for keywords:', keywords);
 
         let bestMatch = null;
         let bestScore = 0;
+        let allMatches = [];
 
         for (const doc of documents) {
             if (doc.status !== 'active') continue;
@@ -1474,20 +1579,42 @@ async function simulateAIAnswer(question) {
                     const content = contentData.content || '';
                     const contentLower = content.toLowerCase();
 
-                    // Score based on keyword matches
+                    // Enhanced scoring: each keyword gets points, partial matches count
                     let score = 0;
+                    let matchedKeywords = [];
+
                     keywords.forEach(keyword => {
-                        const matches = (contentLower.match(new RegExp(keyword, 'g')) || []).length;
-                        score += matches;
+                        // Exact matches (word boundary)
+                        const exactMatches = (contentLower.match(new RegExp(`\\b${keyword}\\b`, 'g')) || []).length;
+                        // Partial matches (contains keyword)
+                        const partialMatches = (contentLower.match(new RegExp(keyword, 'g')) || []).length;
+
+                        if (exactMatches > 0) {
+                            score += exactMatches * 3; // Exact matches worth more
+                            matchedKeywords.push(keyword);
+                        } else if (partialMatches > 0) {
+                            score += partialMatches; // Partial matches worth less
+                            matchedKeywords.push(keyword);
+                        }
                     });
 
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestMatch = {
+                    if (score > 0) {
+                        allMatches.push({
                             doc,
                             content,
-                            score
-                        };
+                            score,
+                            matchedKeywords
+                        });
+
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMatch = {
+                                doc,
+                                content,
+                                score,
+                                matchedKeywords
+                            };
+                        }
                     }
                 }
             } catch (err) {
@@ -1495,25 +1622,37 @@ async function simulateAIAnswer(question) {
             }
         }
 
+        console.log('Found matches:', allMatches.length, 'Best score:', bestScore);
+
         if (bestMatch && bestMatch.score > 0) {
-            // Extract relevant snippet (first 500 characters that contain keywords)
+            // Extract relevant snippets containing the matched keywords
             const content = bestMatch.content;
             const contentLower = content.toLowerCase();
 
-            let snippet = content.substring(0, 500);
-            for (const keyword of keywords) {
+            let snippets = [];
+
+            // Find snippets for each matched keyword
+            bestMatch.matchedKeywords.slice(0, 3).forEach(keyword => {
                 const index = contentLower.indexOf(keyword);
                 if (index !== -1) {
-                    const start = Math.max(0, index - 200);
-                    const end = Math.min(content.length, index + 300);
-                    snippet = content.substring(start, end);
-                    break;
-                }
-            }
+                    const start = Math.max(0, index - 150);
+                    const end = Math.min(content.length, index + 350);
+                    let snippet = content.substring(start, end).trim();
 
-            return `Based on "${bestMatch.doc.originalName}":\n\n${snippet}...\n\n(Note: Using basic text search. For AI-powered answers, please add OpenAI API credits.)`;
+                    // Clean up snippet
+                    if (start > 0) snippet = '...' + snippet;
+                    if (end < content.length) snippet = snippet + '...';
+
+                    snippets.push(snippet);
+                }
+            });
+
+            // Combine snippets or use first one
+            const resultSnippet = snippets.length > 0 ? snippets[0] : content.substring(0, 500);
+
+            return `Based on "${bestMatch.doc.originalName}" (matched: ${bestMatch.matchedKeywords.join(', ')}):\n\n${resultSnippet}`;
         } else {
-            return `I searched through ${documents.length} document(s) but couldn't find relevant information for your question. The keywords I looked for were: ${keywords.join(', ')}.\n\nTry rephrasing your question or upload more relevant documents.`;
+            return `I searched through ${documents.length} document(s) but couldn't find relevant information. Keywords searched: ${keywords.join(', ')}. Try rephrasing your question or check if your documents contain this information.`;
         }
 
     } catch (error) {
@@ -1550,7 +1689,17 @@ function updateTimerDisplay(seconds, timeLimit) {
     const secs = seconds % 60;
     const timeString = `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 
-    document.getElementById('meeting-timer').textContent = timeString;
+    // Update modal timer
+    const meetingTimerEl = document.getElementById('meeting-timer');
+    if (meetingTimerEl) {
+        meetingTimerEl.textContent = timeString;
+    }
+
+    // Update pop-up timer
+    const popupTimerEl = document.getElementById('popup-timer');
+    if (popupTimerEl) {
+        popupTimerEl.textContent = timeString;
+    }
 
     // Show warning when approaching time limit
     if (timeLimit !== Infinity) {
@@ -1558,13 +1707,13 @@ function updateTimerDisplay(seconds, timeLimit) {
         const warningDiv = document.getElementById('time-limit-warning');
         const warningText = document.getElementById('time-remaining-text');
 
-        if (remainingSeconds <= 120) { // 2 minutes remaining
+        if (warningDiv && warningText && remainingSeconds <= 120) { // 2 minutes remaining
             warningDiv.style.display = 'block';
             const remainingMins = Math.floor(remainingSeconds / 60);
             const remainingSecs = remainingSeconds % 60;
             warningText.textContent = `⚠️ ${remainingMins}:${String(remainingSecs).padStart(2, '0')} remaining`;
             warningText.style.color = remainingSeconds <= 60 ? 'var(--error-color)' : 'var(--warning-color)';
-        } else {
+        } else if (warningDiv) {
             warningDiv.style.display = 'none';
         }
     }

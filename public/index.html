@@ -141,9 +141,9 @@
                         </div>
                         <ul class="plan-features">
                             <li>✓ 15 minutes per meeting</li>
-                            <li>✓ Basic transcription</li>
-                            <li>✓ Company Brain access</li>
-                            <li>✓ All integrations</li>
+                            <li>✓ Product knowledge access</li>
+                            <li>✓ Captures meeting questions</li>
+                            <li>✓ Unlimited document uploads</li>
                         </ul>
                         <input type="radio" name="subscription" value="free" id="plan-free" checked>
                     </div>
@@ -159,9 +159,9 @@
                         </div>
                         <ul class="plan-features">
                             <li>✓ 30 minutes per meeting</li>
-                            <li>✓ Advanced transcription</li>
-                            <li>✓ Company Brain access</li>
-                            <li>✓ All integrations</li>
+                            <li>✓ Product knowledge access</li>
+                            <li>✓ Captures meeting questions</li>
+                            <li>✓ Unlimited document uploads</li>
                             <li>✓ Priority support</li>
                         </ul>
                         <input type="radio" name="subscription" value="pro" id="plan-pro">
@@ -171,15 +171,15 @@
                         <div class="plan-header">
                             <h3>Business</h3>
                             <div class="plan-price">
-                                <span class="price">$49</span>
+                                <span class="price">$29</span>
                                 <span class="period">/month</span>
                             </div>
                         </div>
                         <ul class="plan-features">
                             <li>✓ 60 minutes per meeting</li>
-                            <li>✓ Premium transcription</li>
-                            <li>✓ Company Brain access</li>
-                            <li>✓ All integrations</li>
+                            <li>✓ Product knowledge access</li>
+                            <li>✓ Captures meeting questions</li>
+                            <li>✓ Unlimited document uploads</li>
                             <li>✓ Priority support</li>
                             <li>✓ Custom features</li>
                         </ul>
@@ -805,6 +805,23 @@
         <div class="modal-content" style="max-width: 900px;">
             <span class="modal-close" onclick="closeMeetingDetailsModal()">&times;</span>
             <div id="meeting-details-content"></div>
+        </div>
+    </div>
+
+    <!-- Answerly Floating Pop-up -->
+    <div id="answerly-popup" class="answerly-popup">
+        <div class="answerly-popup-header">
+            <div>
+                <span class="answerly-popup-title">Listening...</span>
+                <div class="answerly-popup-timer" id="popup-timer">00:00</div>
+            </div>
+            <button class="answerly-popup-close" onclick="closeAnswerlyPopup()">×</button>
+        </div>
+        <div class="answerly-popup-body" id="answerly-popup-body">
+            <div class="conversation-flow-text">As the conversation flows...</div>
+        </div>
+        <div class="answerly-popup-footer">
+            <div class="answerly-popup-branding">Answerly.ai</div>
         </div>
     </div>
 
