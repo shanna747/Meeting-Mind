@@ -559,7 +559,7 @@ body {
     background: white;
     border-radius: 16px;
     padding: 48px;
-    max-width: 1000px;
+    max-width: 500px;
     width: 100%;
     box-shadow: var(--shadow-xl);
 }
@@ -1688,6 +1688,251 @@ body {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+/* Onboarding View */
+.onboarding-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 60px 20px;
+}
+
+.onboarding-card {
+    background: white;
+    border-radius: 16px;
+    padding: 48px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+}
+
+.onboarding-logo {
+    margin-bottom: 24px;
+}
+
+.onboarding-logo img {
+    filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.3));
+}
+
+.onboarding-card h1 {
+    font-size: 32px;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.onboarding-subtitle {
+    font-size: 18px;
+    color: var(--text-secondary);
+    margin-bottom: 40px;
+}
+
+.onboarding-upload-area {
+    margin-bottom: 32px;
+}
+
+.upload-text {
+    display: inline-block;
+    padding: 12px 32px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    background: #f5f5f5;
+    border: 2px solid #d1d5db;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.upload-text:hover {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+}
+
+.onboarding-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.btn-large {
+    padding: 16px 48px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* Answerly Dashboard View */
+.answerly-dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px 40px;
+}
+
+.answerly-hero {
+    text-align: center;
+}
+
+.answerly-hero h1 {
+    font-size: 42px;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+.answerly-hero > p {
+    font-size: 18px;
+    color: var(--text-secondary);
+    margin-bottom: 48px;
+}
+
+.answerly-controls {
+    margin-bottom: 16px;
+}
+
+.btn-answerly-large {
+    background: linear-gradient(135deg, #10b981, #3b82f6);
+    color: white;
+    border: none;
+    padding: 20px 48px;
+    font-size: 20px;
+    font-weight: 700;
+    border-radius: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    transition: all var(--transition-base);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+.btn-answerly-large:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(59, 130, 246, 0.4);
+}
+
+.btn-answerly-large:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-answerly-large:disabled:hover {
+    transform: none;
+    box-shadow: 0 4px 16px rgba(156, 163, 175, 0.3);
+}
+
+.answerly-notice {
+    margin: 0 auto 60px auto;
+    padding: 3px 5px;
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: 2px;
+    color: #92400e;
+    font-size: 10px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    max-width: 300px;
+}
+
+.answerly-notice svg {
+    width: 12px;
+    height: 12px;
+    margin-right: 4px;
+}
+
+.answerly-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 60px;
+}
+
+.answerly-stat-card {
+    background: white;
+    padding: 32px;
+    border-radius: 12px;
+    border: 2px solid var(--border-color);
+    text-align: center;
+    transition: all var(--transition-base);
+}
+
+.answerly-stat-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.stat-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.answerly-quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+.action-card {
+    background: white;
+    padding: 32px;
+    border-radius: 12px;
+    border: 2px solid var(--border-color);
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.action-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.action-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.action-card h3 {
+    font-size: 20px;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.action-card p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* Slide Transition Animation */
+.dashboard-view {
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+}
+
+.dashboard-view.slide-out-left {
+    transform: translateX(-100%);
+    opacity: 0;
+}
+
+.dashboard-view.slide-in-right {
+    transform: translateX(100%);
+    opacity: 0;
+}
+
+.dashboard-view.slide-in-center {
+    transform: translateX(0);
+    opacity: 1;
 }
 
 /* Answerly Floating Pop-up */

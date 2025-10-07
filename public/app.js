@@ -23,25 +23,257 @@ function showHowItWorks() {
 
 function showDashboard() {
     showPage('dashboard-page');
-    showDashboardView();
-    loadDashboardData();
+
+    // Check if user is new (no documents uploaded)
+    checkIfNewUser();
 }
 
-function showDashboardView() {
+async function checkIfNewUser() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/datasources/documents', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        const documents = data.documents || [];
+
+        if (documents.length === 0) {
+            // New user - show onboarding
+            showOnboarding();
+        } else {
+            // Existing user - show Answerly dashboard
+            showAnswerlyDashboard();
+        }
+    } catch (error) {
+        console.error('Error checking user status:', error);
+        // Default to showing Answerly dashboard
+        showAnswerlyDashboard();
+    }
+}
+
+function showOnboarding() {
     // Hide all dashboard views
     document.querySelectorAll('.dashboard-view').forEach(view => {
         view.classList.remove('active');
     });
 
-    // Show dashboard view
-    document.getElementById('dashboard-view').classList.add('active');
+    // Show onboarding view
+    document.getElementById('onboarding-view').classList.add('active');
+
+    // Setup file upload
+    setupOnboardingFileUpload();
+}
+
+function showAnswerlyDashboard() {
+    // Hide all dashboard views
+    document.querySelectorAll('.dashboard-view').forEach(view => {
+        view.classList.remove('active');
+    });
+
+    // Show Answerly dashboard view
+    document.getElementById('answerly-dashboard-view').classList.add('active');
 
     // Update nav links
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
     });
-    document.querySelector('.nav-link[onclick="showDashboardView()"]').classList.add('active');
+    document.querySelector('.nav-link[onclick="showAnswerlyDashboard()"]').classList.add('active');
+
+    // Load stats
+    loadAnswerlyDashboardStats();
 }
+
+function setupOnboardingFileUpload() {
+    const dropZone = document.getElementById('onboarding-drop-zone');
+    const fileInput = document.getElementById('onboarding-files');
+    const fileList = document.getElementById('onboarding-file-list');
+    const submitBtn = document.getElementById('onboarding-submit-btn');
+
+    // Click to upload
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    // File selection
+    fileInput.addEventListener('change', (e) => {
+        handleOnboardingFiles(e.target.files);
+        submitBtn.disabled = e.target.files.length === 0;
+    });
+
+    // Drag and drop
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        fileInput.files = files;
+        handleOnboardingFiles(files);
+        submitBtn.disabled = files.length === 0;
+    });
+
+    function handleOnboardingFiles(files) {
+        fileList.innerHTML = '';
+        Array.from(files).forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <span class="file-item-name">${file.name} (${formatFileSize(file.size)})</span>
+                <span class="file-item-remove" onclick="removeOnboardingFile(${index})">Remove</span>
+            `;
+            fileList.appendChild(fileItem);
+        });
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+}
+
+function removeOnboardingFile(index) {
+    const fileInput = document.getElementById('onboarding-files');
+    const submitBtn = document.getElementById('onboarding-submit-btn');
+    const dt = new DataTransfer();
+    const files = Array.from(fileInput.files);
+
+    files.forEach((file, i) => {
+        if (i !== index) dt.items.add(file);
+    });
+
+    fileInput.files = dt.files;
+    fileInput.dispatchEvent(new Event('change'));
+    submitBtn.disabled = dt.files.length === 0;
+}
+
+async function submitOnboardingDocuments() {
+    const fileInput = document.getElementById('onboarding-files');
+    const formData = new FormData();
+
+    Array.from(fileInput.files).forEach(file => {
+        formData.append('files', file);
+    });
+
+    formData.append('category', 'general');
+    formData.append('tags', 'onboarding');
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/datasources/documentation/upload', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            // Transition to Answerly dashboard with slide animation
+            transitionToAnswerlyDashboard();
+        } else {
+            alert(data.error || 'Failed to upload documents');
+        }
+    } catch (error) {
+        console.error('Onboarding upload error:', error);
+        alert('Failed to upload documents');
+    }
+}
+
+function transitionToAnswerlyDashboard() {
+    const onboardingView = document.getElementById('onboarding-view');
+    const answerlyDashboard = document.getElementById('answerly-dashboard-view');
+
+    // Slide out onboarding to the left
+    onboardingView.classList.add('slide-out-left');
+
+    // Prepare Answerly dashboard to slide in from right
+    answerlyDashboard.classList.add('slide-in-right');
+    answerlyDashboard.classList.add('active');
+
+    // Trigger transition
+    setTimeout(() => {
+        answerlyDashboard.classList.remove('slide-in-right');
+        answerlyDashboard.classList.add('slide-in-center');
+
+        setTimeout(() => {
+            onboardingView.classList.remove('active', 'slide-out-left');
+        }, 500);
+    }, 50);
+
+    // Load stats
+    loadAnswerlyDashboardStats();
+}
+
+async function loadAnswerlyDashboardStats() {
+    try {
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        // Load document count
+        const docsResponse = await fetch('/api/datasources/documents', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        const docsData = await docsResponse.json();
+        const allDocuments = docsData.documents || [];
+
+        // Count only ACTIVE documents
+        const activeDocCount = allDocuments.filter(doc => doc.status === 'active').length;
+
+        // Display active document count
+        document.getElementById('answerly-docs-count').textContent = activeDocCount;
+
+        // Enable/disable Go Live button based on ACTIVE document count
+        const activateBtn = document.getElementById('answerly-activate-btn');
+        const heroTitle = document.getElementById('answerly-hero-title');
+        const heroSubtitle = document.getElementById('answerly-hero-subtitle');
+
+        if (activeDocCount === 0) {
+            activateBtn.disabled = true;
+            // Keep default title and subtitle
+            heroTitle.textContent = 'Ready to Start Listening?';
+            heroSubtitle.textContent = 'Upload documents to the Knowledge Hub to activate Answerly';
+        } else {
+            activateBtn.disabled = false;
+            // Change title and subtitle when documents are active
+            heroTitle.textContent = 'Real Time Answers';
+            heroSubtitle.textContent = 'Knowledge is power and key to success';
+        }
+
+        // Set time limit based on subscription
+        const timeLimits = {
+            'free': '15 min',
+            'pro': '30 min',
+            'business': '60 min'
+        };
+        document.getElementById('answerly-time-limit').textContent = timeLimits[user?.subscription] || '15 min';
+
+        // Load questions count
+        const notesResponse = await fetch('/api/meeting-notes?status=completed', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        const notesData = await notesResponse.json();
+        const meetings = notesData.meetings || [];
+        const totalQuestions = meetings.reduce((sum, m) => sum + (m.summary?.answeredQuestions || 0), 0);
+        document.getElementById('answerly-questions-count').textContent = totalQuestions;
+    } catch (error) {
+        console.error('Error loading Answerly dashboard stats:', error);
+    }
+}
+
 
 function showUserProfile() {
     // Hide all dashboard views
@@ -704,7 +936,14 @@ function displayDocuments(documents) {
         return;
     }
 
-    tbody.innerHTML = documents.map(doc => `
+    // Sort documents: active first, then archived
+    const sortedDocuments = [...documents].sort((a, b) => {
+        if (a.status === 'active' && b.status === 'archived') return -1;
+        if (a.status === 'archived' && b.status === 'active') return 1;
+        return 0;
+    });
+
+    tbody.innerHTML = sortedDocuments.map(doc => `
         <tr data-doc-id="${doc.id}">
             <td>
                 <div class="doc-name">
@@ -1020,6 +1259,13 @@ let meetingStartTime = null;
 let meetingElapsedSeconds = 0;
 
 function activateAnswerly() {
+    // Check if button is disabled
+    const activateBtn = document.getElementById('answerly-activate-btn');
+    if (activateBtn && activateBtn.disabled) {
+        alert('Please upload documents to your Knowledge Hub before activating Answerly.');
+        return;
+    }
+
     // Show floating pop-up instead of modal
     document.getElementById('answerly-popup').classList.add('active');
     // Start listening
