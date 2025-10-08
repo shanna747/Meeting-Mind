@@ -23,9 +23,9 @@ class FileStorageService {
   /**
    * Upload file to S3 or local storage
    */
-  async uploadFile(file, folder = 'documentation') {
+  async uploadFile(file, userId, folder = 'documentation') {
     const fileExtension = path.extname(file.originalname);
-    const fileName = `${folder}/${Date.now()}-${crypto.randomBytes(8).toString('hex')}${fileExtension}`;
+    const fileName = `users/${userId}/${folder}/${Date.now()}-${crypto.randomBytes(8).toString('hex')}${fileExtension}`;
 
     if (this.useS3) {
       // Upload to S3
@@ -35,7 +35,8 @@ class FileStorageService {
         Body: file.buffer,
         ContentType: file.mimetype,
         Metadata: {
-          originalName: file.originalname
+          originalName: file.originalname,
+          userId: userId
         }
       });
 
