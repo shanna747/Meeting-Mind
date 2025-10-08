@@ -1,3 +1,14 @@
+
+require('dotenv').config();
+
+// Rest of your imports
+const mongoose = require('mongoose');
+
+// Now you can use process.env.MONGODB_URI
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('Error:', err));
+
 const dotenv = require('dotenv');
 dotenv.config();
 
@@ -20,8 +31,29 @@ const wss = new WebSocket.Server({ server });
 // Set WebSocket server for subscription enforcer
 subscriptionEnforcer.setWebSocketServer(wss);
 
+// CORS Configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:3000'];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.static('public'));
 

@@ -1,0 +1,65 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Modern Question-to-Checkmark Morphing Logo -->
+  <defs>
+    <!-- Vibrant gradient from purple to green -->
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366F1;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#10B981;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Solid colors for fallback -->
+    <linearGradient id="questionColor" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366F1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="checkColor" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle with subtle glow -->
+  <circle cx="256" cy="256" r="240" fill="url(#primaryGradient)" opacity="0.08"/>
+
+  <!-- Main symbol: Question mark morphing into checkmark -->
+  <!-- The design flows from left (question) to right (check) -->
+
+  <!-- Question mark top curve - bold and modern -->
+  <path d="M 140 180
+           Q 140 100, 200 80
+           Q 260 60, 300 100
+           Q 340 140, 340 200
+           Q 340 240, 310 270
+           Q 280 300, 256 320
+           L 256 340"
+        stroke="url(#questionColor)"
+        stroke-width="48"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        fill="none"/>
+
+  <!-- Question mark dot -->
+  <circle cx="256" cy="400" r="28" fill="url(#questionColor)"/>
+
+  <!-- Checkmark - seamlessly flows from the question curve -->
+  <path d="M 180 260
+           L 240 340
+           L 380 160"
+        stroke="url(#checkColor)"
+        stroke-width="48"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        fill="none"
+        opacity="0.9"/>
+
+  <!-- Connecting element - smooth transition -->
+  <path d="M 280 300 Q 300 280, 320 240"
+        stroke="url(#primaryGradient)"
+        stroke-width="36"
+        stroke-linecap="round"
+        fill="none"
+        opacity="0.4"/>
+
+</svg>

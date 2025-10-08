@@ -4,8 +4,7 @@ const path = require('path');
 
 class AuthService {
   constructor() {
-    // In-memory user storage (replace with database in production)
-    this.users = new Map();
+    // Session storage (keep in-memory for tokens)
     this.sessions = new Map();
     this.dataFile = path.join(__dirname, '../data/auth-data.json');
 
@@ -66,43 +65,41 @@ class AuthService {
     const { name, email, password, company, subscription } = userData;
 
     // Check if user already exists
-    if (this.findUserByEmail(email)) {
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
       throw new Error('User already exists with this email');
     }
 
     // Hash password
     const passwordHash = this.hashPassword(password);
 
-    // Create user object
-    const user = {
-      id: this.generateId(),
+    // Create user document
+    const user = new User({
       name,
-      email,
+      email: email.toLowerCase(),
       passwordHash,
       company: company || '',
       subscription: subscription || 'free',
-      createdAt: new Date().toISOString(),
       dataSources: {
         documentation: { connected: false },
         slack: { connected: false },
         googleSheets: { connected: false },
         notion: { connected: false },
         confluence: { connected: false }
-      },
-      subscriptionLimits: this.getSubscriptionLimits(subscription)
-    };
+      }
+    });
 
-    // Store user
-    this.users.set(user.id, user);
+    // Save to database
+    await user.save();
 
     // Generate token
-    const token = this.generateToken(user.id);
+    const token = this.generateToken(user._id.toString());
 
     // Save to disk
     this.saveData();
 
     return {
-      user: this.sanitizeUser(user),
+      user: user.toSafeObject(),
       token
     };
   }
@@ -111,7 +108,7 @@ class AuthService {
    * Login user
    */
   async login(email, password) {
-    const user = this.findUserByEmail(email);
+    const user = await User.findOne({ email: email.toLowerCase() });
 
     if (!user) {
       throw new Error('Invalid email or password');
@@ -124,13 +121,13 @@ class AuthService {
     }
 
     // Generate new token
-    const token = this.generateToken(user.id);
+    const token = this.generateToken(user._id.toString());
 
     // Save to disk
     this.saveData();
 
     return {
-      user: this.sanitizeUser(user),
+      user: user.toSafeObject(),
       token
     };
   }
@@ -152,12 +149,12 @@ class AuthService {
       throw new Error('Token expired');
     }
 
-    const user = this.users.get(session.userId);
+    const user = await User.findById(session.userId);
     if (!user) {
       throw new Error('User not found');
     }
 
-    return this.sanitizeUser(user);
+    return user.toSafeObject();
   }
 
   /**
@@ -172,22 +169,22 @@ class AuthService {
    * Update user subscription
    */
   async updateSubscription(userId, newSubscription) {
-    const user = this.users.get(userId);
+    const user = await User.findById(userId);
     if (!user) {
       throw new Error('User not found');
     }
 
     user.subscription = newSubscription;
-    user.subscriptionLimits = this.getSubscriptionLimits(newSubscription);
+    await user.save();
 
-    return this.sanitizeUser(user);
+    return user.toSafeObject();
   }
 
   /**
    * Update data source connection status
    */
   async updateDataSource(userId, source, status) {
-    const user = this.users.get(userId);
+    const user = await User.findById(userId);
     if (!user) {
       throw new Error('User not found');
     }
@@ -302,17 +299,6 @@ class AuthService {
     return limits[subscription] || limits.free;
   }
 
-  /**
-   * Helper: Find user by email
-   */
-  findUserByEmail(email) {
-    for (const user of this.users.values()) {
-      if (user.email.toLowerCase() === email.toLowerCase()) {
-        return user;
-      }
-    }
-    return null;
-  }
 
   /**
    * Helper: Hash password
@@ -346,18 +332,33 @@ class AuthService {
   }
 
   /**
-   * Helper: Remove sensitive data from user object
+   * Get all users (admin only)
    */
-  sanitizeUser(user) {
-    const { passwordHash, ...sanitized } = user;
-    return sanitized;
+  async getAllUsers() {
+    const users = await User.find({});
+    return users.map(user => user.toSafeObject());
   }
 
   /**
-   * Get all users (admin only)
+   * Delete user account
    */
-  getAllUsers() {
-    return Array.from(this.users.values()).map(user => this.sanitizeUser(user));
+  async deleteAccount(userId) {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Delete user from database
+    await User.findByIdAndDelete(userId);
+
+    // Remove all sessions for this user
+    for (const [token, sessionUserId] of this.sessions.entries()) {
+      if (sessionUserId === userId) {
+        this.sessions.delete(token);
+      }
+    }
+
+    return { success: true };
   }
 }
 

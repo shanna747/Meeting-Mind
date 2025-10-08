@@ -1,18 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const authService = require('../services/authService');
+const fileStorage = require('../services/fileStorage');
 const multer = require('multer');
+const pdfParse = require('pdf-parse');
 
 // Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/documentation/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
-  }
-});
+// Use memory storage for S3, disk storage for local
+const storage = fileStorage.useS3
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (req, file, cb) => {
+        cb(null, 'uploads/documentation/');
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + '-' + file.originalname);
+      }
+    });
 
 const upload = multer({
   storage,
@@ -39,13 +44,24 @@ router.get('/status', async (req, res) => {
 
     const user = await authService.verifyToken(token);
 
-    res.json(user.dataSources || {
-      documentation: { connected: false },
-      slack: { connected: false },
-      googleSheets: { connected: false },
-      notion: { connected: false },
-      confluence: { connected: false }
-    });
+    // Check if documentation has actual files uploaded
+    const docFiles = user.dataSources?.documentation?.files || [];
+    const hasDocuments = docFiles.length > 0;
+
+    // Build response with actual connection status based on uploaded documents
+    const status = {
+      documentation: {
+        connected: hasDocuments,
+        files: docFiles,
+        ...(user.dataSources?.documentation || {})
+      },
+      slack: user.dataSources?.slack || { connected: false },
+      googleSheets: user.dataSources?.googleSheets || { connected: false },
+      notion: user.dataSources?.notion || { connected: false },
+      confluence: user.dataSources?.confluence || { connected: false }
+    };
+
+    res.json(status);
   } catch (error) {
     console.error('Error getting data source status:', error);
     res.status(500).json({ error: error.message });
@@ -64,24 +80,42 @@ router.post('/documentation/upload', upload.array('files', 10), async (req, res)
     const { url, category, tags } = req.body;
     const files = req.files || [];
 
-    // Store documentation metadata
+    // Get existing documentation data
+    const existingDocs = user.dataSources?.documentation || {};
+    const existingFiles = existingDocs.files || [];
+
+    // Upload files using fileStorage service
+    const newFiles = await Promise.all(
+      files.map(async (f) => {
+        const uploadedFile = await fileStorage.uploadFile(f, user.id, 'documentation');
+        return {
+          ...uploadedFile,
+          category,
+          tags: tags ? tags.split(',').map(t => t.trim()) : [],
+          status: 'active'
+        };
+      })
+    );
+
+    // Store documentation metadata with appended files
     await authService.updateDataSource(user.id, 'documentation', {
-      files: files.map(f => ({ filename: f.filename, originalName: f.originalname, path: f.path })),
+      files: [...existingFiles, ...newFiles],
       url,
       category,
       tags: tags ? tags.split(',').map(t => t.trim()) : [],
-      uploadedAt: new Date().toISOString()
+      lastUploadedAt: new Date().toISOString()
     });
 
-    res.json({ success: true, filesUploaded: files.length });
+    res.json({ success: true, filesUploaded: files.length, totalFiles: existingFiles.length + files.length });
   } catch (error) {
     console.error('Documentation upload error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Slack configuration endpoint
-router.post('/slack/configure', async (req, res) => {
+
+// Get documents for Knowledge Hub
+router.get('/documents', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
@@ -89,91 +123,18 @@ router.post('/slack/configure', async (req, res) => {
     }
 
     const user = await authService.verifyToken(token);
-    const { workspace, channels } = req.body;
+    const docs = user.dataSources?.documentation || {};
+    const files = docs.files || [];
 
-    // Store Slack configuration
-    await authService.updateDataSource(user.id, 'slack', {
-      workspace,
-      channels: channels ? channels.split(',').map(c => c.trim()) : []
-    });
-
-    // Generate OAuth URL
-    const clientId = process.env.SLACK_CLIENT_ID;
-    const redirectUri = process.env.SLACK_REDIRECT_URI || 'http://localhost:3000/api/datasources/slack/callback';
-    const scopes = 'channels:history,channels:read,users:read,search:read';
-    const authUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${scopes}&redirect_uri=${encodeURIComponent(redirectUri)}`;
-
-    res.json({ authUrl });
+    res.json({ documents: files });
   } catch (error) {
-    console.error('Slack configuration error:', error);
+    console.error('Error fetching documents:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Slack integration endpoints
-router.get('/slack/auth-url', (req, res) => {
-  const clientId = process.env.SLACK_CLIENT_ID;
-  const redirectUri = process.env.SLACK_REDIRECT_URI || 'http://localhost:3000/api/datasources/slack/callback';
-
-  if (!clientId) {
-    return res.status(400).json({ error: 'Slack integration not configured' });
-  }
-
-  const scopes = 'channels:history,channels:read,users:read,search:read';
-  const authUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${scopes}&redirect_uri=${encodeURIComponent(redirectUri)}`;
-
-  res.json({ authUrl });
-});
-
-router.get('/slack/callback', async (req, res) => {
-  const { code } = req.query;
-
-  if (!code) {
-    return res.status(400).json({ error: 'Missing authorization code' });
-  }
-
-  // TODO: Exchange code for access token and store
-  // For now, just redirect to dashboard
-  res.redirect('/?connection=slack&status=success');
-});
-
-// Google Sheets integration endpoints
-router.get('/google-sheets/auth-url', (req, res) => {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const redirectUri = process.env.GOOGLE_SHEETS_REDIRECT_URI || 'http://localhost:3000/api/datasources/google-sheets/callback';
-
-  if (!clientId) {
-    return res.status(400).json({ error: 'Google Sheets integration not configured' });
-  }
-
-  const scopes = [
-    'https://www.googleapis.com/auth/spreadsheets.readonly',
-    'https://www.googleapis.com/auth/drive.readonly'
-  ];
-
-  const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-  authUrl.searchParams.set('client_id', clientId);
-  authUrl.searchParams.set('redirect_uri', redirectUri);
-  authUrl.searchParams.set('response_type', 'code');
-  authUrl.searchParams.set('scope', scopes.join(' '));
-  authUrl.searchParams.set('access_type', 'offline');
-
-  res.json({ authUrl: authUrl.toString() });
-});
-
-router.get('/google-sheets/callback', async (req, res) => {
-  const { code } = req.query;
-
-  if (!code) {
-    return res.status(400).json({ error: 'Missing authorization code' });
-  }
-
-  // TODO: Exchange code for access token and store
-  res.redirect('/?connection=google-sheets&status=success');
-});
-
-// Google Sheets configuration endpoint
-router.post('/google-sheets/configure', async (req, res) => {
+// Get document content by ID
+router.get('/documents/:docId/content', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
@@ -181,63 +142,79 @@ router.post('/google-sheets/configure', async (req, res) => {
     }
 
     const user = await authService.verifyToken(token);
-    const { sheetUrl, refreshFrequency } = req.body;
+    const { docId } = req.params;
+    const docs = user.dataSources?.documentation || {};
+    const files = docs.files || [];
 
-    // Store Google Sheets configuration
-    await authService.updateDataSource(user.id, 'googleSheets', {
-      sheetUrl,
-      refreshFrequency
-    });
+    const doc = files.find(f => f.id === docId);
+    if (!doc) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
 
-    // Generate OAuth URL
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const redirectUri = process.env.GOOGLE_SHEETS_REDIRECT_URI || 'http://localhost:3000/api/datasources/google-sheets/callback';
-    const scopes = [
-      'https://www.googleapis.com/auth/spreadsheets.readonly',
-      'https://www.googleapis.com/auth/drive.readonly'
-    ];
+    // If content is already stored, return it
+    if (doc.content) {
+      return res.json({ content: doc.content });
+    }
 
-    const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-    authUrl.searchParams.set('client_id', clientId);
-    authUrl.searchParams.set('redirect_uri', redirectUri);
-    authUrl.searchParams.set('response_type', 'code');
-    authUrl.searchParams.set('scope', scopes.join(' '));
-    authUrl.searchParams.set('access_type', 'offline');
+    // Otherwise, try to read from file
+    const fs = require('fs').promises;
+    const path = require('path');
 
-    res.json({ authUrl: authUrl.toString() });
+    // Check file extension to determine file type
+    const ext = path.extname(doc.originalName || doc.filename || '').toLowerCase();
+    const textExtensions = ['.txt', '.md', '.markdown', '.json', '.xml', '.csv', '.log'];
+
+    try {
+      // Handle PDF files
+      if (ext === '.pdf') {
+        let dataBuffer;
+        if (fileStorage.useS3) {
+          // Get file from S3
+          const command = new (require('@aws-sdk/client-s3').GetObjectCommand)({
+            Bucket: process.env.AWS_S3_BUCKET,
+            Key: doc.path
+          });
+          const response = await fileStorage.s3Client.send(command);
+          const chunks = [];
+          for await (const chunk of response.Body) {
+            chunks.push(chunk);
+          }
+          dataBuffer = Buffer.concat(chunks);
+        } else {
+          // Get file from local storage
+          dataBuffer = await fs.readFile(doc.path);
+        }
+        const pdfData = await pdfParse(dataBuffer);
+        const extractedText = pdfData.text || '[No text could be extracted from PDF]';
+        return res.json({ content: extractedText, isBinary: false });
+      }
+
+      // Handle text files
+      if (textExtensions.includes(ext)) {
+        const content = await fileStorage.getFileContent(doc.path);
+        return res.json({ content, isBinary: false });
+      }
+
+      // Handle other binary files (DOCX, etc.)
+      return res.json({
+        content: `[${ext.toUpperCase() || 'Binary'} file - Cannot display binary content]\n\nThis is a ${ext || 'binary'} file. To edit the content:\n1. Download the original file\n2. Edit it with appropriate software (e.g., Microsoft Word for .docx)\n3. Re-upload the edited version\n\nFile: ${doc.originalName || doc.filename}\nSize: ${(doc.size / 1024).toFixed(2)} KB`,
+        isBinary: true
+      });
+    } catch (err) {
+      console.error('Error reading file content:', err);
+      res.json({
+        content: '[Error reading file - file may be corrupted or inaccessible]',
+        isBinary: false
+      });
+    }
   } catch (error) {
-    console.error('Google Sheets configuration error:', error);
+    console.error('Error fetching document content:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Notion integration endpoints
-router.get('/notion/auth-url', (req, res) => {
-  const clientId = process.env.NOTION_CLIENT_ID;
-  const redirectUri = process.env.NOTION_REDIRECT_URI || 'http://localhost:3000/api/datasources/notion/callback';
-
-  if (!clientId) {
-    return res.status(400).json({ error: 'Notion integration not configured' });
-  }
-
-  const authUrl = `https://api.notion.com/v1/oauth/authorize?client_id=${clientId}&response_type=code&owner=user&redirect_uri=${encodeURIComponent(redirectUri)}`;
-
-  res.json({ authUrl });
-});
-
-router.get('/notion/callback', async (req, res) => {
-  const { code } = req.query;
-
-  if (!code) {
-    return res.status(400).json({ error: 'Missing authorization code' });
-  }
-
-  // TODO: Exchange code for access token and store
-  res.redirect('/?connection=notion&status=success');
-});
-
-// Notion configuration endpoint
-router.post('/notion/configure', async (req, res) => {
+// Archive document
+router.post('/documents/:docId/archive', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
@@ -245,54 +222,28 @@ router.post('/notion/configure', async (req, res) => {
     }
 
     const user = await authService.verifyToken(token);
-    const { workspace, syncFrequency } = req.body;
+    const { docId } = req.params;
+    const docs = user.dataSources?.documentation || {};
+    const files = docs.files || [];
 
-    // Store Notion configuration
-    await authService.updateDataSource(user.id, 'notion', {
-      workspace,
-      syncFrequency
+    const updatedFiles = files.map(f =>
+      f.id === docId ? { ...f, status: 'archived', archivedAt: new Date().toISOString() } : f
+    );
+
+    await authService.updateDataSource(user.id, 'documentation', {
+      ...docs,
+      files: updatedFiles
     });
 
-    // Generate OAuth URL
-    const clientId = process.env.NOTION_CLIENT_ID;
-    const redirectUri = process.env.NOTION_REDIRECT_URI || 'http://localhost:3000/api/datasources/notion/callback';
-    const authUrl = `https://api.notion.com/v1/oauth/authorize?client_id=${clientId}&response_type=code&owner=user&redirect_uri=${encodeURIComponent(redirectUri)}`;
-
-    res.json({ authUrl });
+    res.json({ success: true });
   } catch (error) {
-    console.error('Notion configuration error:', error);
+    console.error('Error archiving document:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Confluence integration endpoints
-router.get('/confluence/auth-url', (req, res) => {
-  const clientId = process.env.CONFLUENCE_CLIENT_ID;
-  const redirectUri = process.env.CONFLUENCE_REDIRECT_URI || 'http://localhost:3000/api/datasources/confluence/callback';
-
-  if (!clientId) {
-    return res.status(400).json({ error: 'Confluence integration not configured' });
-  }
-
-  const scopes = 'read:confluence-content.all read:confluence-space.summary read:confluence-props read:confluence-user';
-  const authUrl = `https://auth.atlassian.com/authorize?audience=api.atlassian.com&client_id=${clientId}&scope=${encodeURIComponent(scopes)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&prompt=consent`;
-
-  res.json({ authUrl });
-});
-
-router.get('/confluence/callback', async (req, res) => {
-  const { code } = req.query;
-
-  if (!code) {
-    return res.status(400).json({ error: 'Missing authorization code' });
-  }
-
-  // TODO: Exchange code for access token and store
-  res.redirect('/?connection=confluence&status=success');
-});
-
-// Confluence configuration endpoint
-router.post('/confluence/configure', async (req, res) => {
+// Unarchive document
+router.post('/documents/:docId/unarchive', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
@@ -300,24 +251,97 @@ router.post('/confluence/configure', async (req, res) => {
     }
 
     const user = await authService.verifyToken(token);
-    const { siteUrl, email, spaces } = req.body;
+    const { docId } = req.params;
+    const docs = user.dataSources?.documentation || {};
+    const files = docs.files || [];
 
-    // Store Confluence configuration
-    await authService.updateDataSource(user.id, 'confluence', {
-      siteUrl,
-      email,
-      spaces: spaces ? spaces.split(',').map(s => s.trim()) : []
+    const updatedFiles = files.map(f =>
+      f.id === docId ? { ...f, status: 'active', archivedAt: undefined } : f
+    );
+
+    await authService.updateDataSource(user.id, 'documentation', {
+      ...docs,
+      files: updatedFiles
     });
 
-    // Generate OAuth URL
-    const clientId = process.env.CONFLUENCE_CLIENT_ID;
-    const redirectUri = process.env.CONFLUENCE_REDIRECT_URI || 'http://localhost:3000/api/datasources/confluence/callback';
-    const scopes = 'read:confluence-content.all read:confluence-space.summary read:confluence-props read:confluence-user';
-    const authUrl = `https://auth.atlassian.com/authorize?audience=api.atlassian.com&client_id=${clientId}&scope=${encodeURIComponent(scopes)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&prompt=consent`;
-
-    res.json({ authUrl });
+    res.json({ success: true });
   } catch (error) {
-    console.error('Confluence configuration error:', error);
+    console.error('Error unarchiving document:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update document
+router.put('/documents/:docId', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const user = await authService.verifyToken(token);
+    const { docId } = req.params;
+    const { title, category, tags, status, content } = req.body;
+    const docs = user.dataSources?.documentation || {};
+    const files = docs.files || [];
+
+    const updatedFiles = files.map(f => {
+      if (f.id === docId) {
+        return {
+          ...f,
+          originalName: title || f.originalName,
+          category: category || f.category,
+          tags: tags ? (typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : tags) : f.tags,
+          status: status || f.status,
+          content: content !== undefined ? content : f.content,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return f;
+    });
+
+    await authService.updateDataSource(user.id, 'documentation', {
+      ...docs,
+      files: updatedFiles
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating document:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete document
+router.delete('/documents/:docId', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const user = await authService.verifyToken(token);
+    const { docId } = req.params;
+    const docs = user.dataSources?.documentation || {};
+    const files = docs.files || [];
+
+    // Find the document to delete
+    const docToDelete = files.find(f => f.id === docId);
+    if (docToDelete && docToDelete.path) {
+      // Delete file from S3 or local storage
+      await fileStorage.deleteFile(docToDelete.path);
+    }
+
+    const updatedFiles = files.filter(f => f.id !== docId);
+
+    await authService.updateDataSource(user.id, 'documentation', {
+      ...docs,
+      files: updatedFiles
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting document:', error);
     res.status(500).json({ error: error.message });
   }
 });
