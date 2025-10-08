@@ -134,16 +134,17 @@
                 <div class="subscription-plans">
                     <div class="plan-card" onclick="selectPlan('free')">
                         <div class="plan-header">
-                            <h3>Starter</h3>
+                            <h3>Basic</h3>
                             <div class="plan-price">
                                 <span class="price">FREE</span>
                             </div>
                         </div>
                         <ul class="plan-features">
                             <li>✓ 15 minutes per meeting</li>
-                            <li>✓ Product knowledge access</li>
-                            <li>✓ Captures meeting questions</li>
-                            <li>✓ Unlimited document uploads</li>
+                            <li>✓ Basic transcription</li>
+                            <li>✓ Company Brain access</li>
+                            <li>✓ All integrations</li>
+                            <li>✓ Support Docs</li>
                         </ul>
                         <input type="radio" name="subscription" value="free" id="plan-free" checked>
                     </div>
@@ -151,17 +152,18 @@
                     <div class="plan-card" onclick="selectPlan('pro')">
                         <div class="plan-badge">Popular</div>
                         <div class="plan-header">
-                            <h3>Professional</h3>
+                            <h3>Pro</h3>
                             <div class="plan-price">
-                                <span class="price">$19</span>
+                                <span class="price">$11</span>
                                 <span class="period">/month</span>
                             </div>
                         </div>
                         <ul class="plan-features">
                             <li>✓ 30 minutes per meeting</li>
-                            <li>✓ Product knowledge access</li>
-                            <li>✓ Captures meeting questions</li>
-                            <li>✓ Unlimited document uploads</li>
+                            <li>✓ Advanced transcription</li>
+                            <li>✓ Company Brain access</li>
+                            <li>✓ All integrations</li>
+                            <li>✓ Support Docs</li>
                             <li>✓ Priority support</li>
                         </ul>
                         <input type="radio" name="subscription" value="pro" id="plan-pro">
@@ -171,15 +173,16 @@
                         <div class="plan-header">
                             <h3>Business</h3>
                             <div class="plan-price">
-                                <span class="price">$29</span>
+                                <span class="price">$24</span>
                                 <span class="period">/month</span>
                             </div>
                         </div>
                         <ul class="plan-features">
                             <li>✓ 60 minutes per meeting</li>
-                            <li>✓ Product knowledge access</li>
-                            <li>✓ Captures meeting questions</li>
-                            <li>✓ Unlimited document uploads</li>
+                            <li>✓ Premium transcription</li>
+                            <li>✓ Company Brain access</li>
+                            <li>✓ All integrations</li>
+                            <li>✓ Support Docs</li>
                             <li>✓ Priority support</li>
                             <li>✓ Custom features</li>
                         </ul>
@@ -360,6 +363,8 @@
                     <h2 style="display: inline-block; margin: 0;">Answerly.ai</h2>
                 </div>
                 <nav class="main-nav">
+                    <a href="#" class="nav-link active" onclick="showDashboardTab(event, 'home')">Dashboard</a>
+                    <a href="#" class="nav-link" onclick="showDashboardTab(event, 'brain')">Brain</a>
                 </nav>
                 <div class="user-menu">
                     <div class="user-dropdown">
@@ -397,67 +402,57 @@
         </header>
 
         <main class="dashboard-main">
-            <!-- Onboarding View -->
-            <div id="onboarding-view" class="dashboard-view">
-                <div class="onboarding-container">
-                    <div class="onboarding-card">
-                        <div class="onboarding-logo">
-                            <img src="logo.svg" alt="Answerly.ai Logo" width="80" height="80">
-                        </div>
-                        <h1>Welcome to Answerly.ai!</h1>
-                        <p class="onboarding-subtitle">Let's get started by uploading your first document</p>
+            <!-- Home Tab -->
+            <div id="home-tab" class="dashboard-tab active">
+            <div class="dashboard-container">
+                <section class="dashboard-welcome">
+                    <h1>Welcome to Your Dashboard</h1>
+                    <p>Configure your Company Brain and connect to meeting platforms</p>
+                    <div class="subscription-badge">
+                        <span><strong>Plan:</strong> <span id="current-plan-badge">Free</span></span>
+                        <span><strong>Meeting Limit:</strong> <span id="meeting-limit-badge">15 minutes</span></span>
+                        <button class="btn-secondary btn-sm" onclick="showUpgrade()">Upgrade</button>
+                    </div>
+                </section>
 
-                        <div class="onboarding-upload-area">
-                            <div class="file-drop-zone" id="onboarding-drop-zone">
-                                <div class="upload-text">Upload</div>
-                                <h3>Upload Your First Document</h3>
-                                <p>Drag and drop or click to browse</p>
-                                <p class="file-types">Supported: PDF, DOCX, TXT, MD</p>
-                                <input type="file" id="onboarding-files" multiple accept=".pdf,.docx,.txt,.md" style="display: none;">
+                <div class="dashboard-sections">
+                    <!-- Section 1: Company Knowledge Base -->
+                    <section class="knowledge-base-section">
+                        <div class="section-header">
+                            <div>
+                                <h2>🧠 Company Knowledge Base</h2>
+                                <p class="section-subtitle">Connect your data sources to power AI insights during meetings</p>
                             </div>
                             <div id="onboarding-file-list" class="file-list"></div>
                         </div>
 
-                        <div class="onboarding-actions">
-                            <button class="btn-primary btn-large" onclick="submitOnboardingDocuments()" id="onboarding-submit-btn" disabled>
-                                Continue to Dashboard
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Answerly Dashboard View -->
-            <div id="answerly-dashboard-view" class="dashboard-view">
-                <div class="answerly-dashboard-container">
-                    <div class="answerly-hero">
-                        <h1 id="answerly-hero-title">Ready to Start Listening?</h1>
-                        <p id="answerly-hero-subtitle">Upload documents to the Knowledge Hub to activate Answerly</p>
-
-                        <div class="answerly-controls">
-                            <button class="btn-answerly-large" id="answerly-activate-btn" onclick="activateAnswerly()">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 12px;">
-                                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1 1v3h2v-3c3.53-.55 6-3.63 6-7h-2c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.37 2.47 6.45 6 7z"/>
-                                </svg>
-                                Go Live
-                            </button>
-                        </div>
-
-                        <div class="answerly-stats-grid">
-                            <div class="answerly-stat-card">
-                                <div class="stat-icon">📚</div>
-                                <div class="stat-value" id="answerly-docs-count">0</div>
-                                <div class="stat-label">Active Documents</div>
+                        <div class="connections-grid">
+                            <!-- Product Documentation -->
+                            <div class="connection-card" data-source="documentation">
+                                <div class="connection-header">
+                                    <div class="connection-icon">📚</div>
+                                    <h3>Product Documentation</h3>
+                                </div>
+                                <p class="connection-description">Upload or link your product docs, help articles, and technical documentation</p>
+                                <div class="connection-status disconnected">
+                                    <span class="status-indicator"></span>
+                                    <span>Not Connected</span>
+                                </div>
+                                <button class="btn-primary" onclick="connectDocumentation()">Add</button>
                             </div>
-                            <div class="answerly-stat-card">
-                                <div class="stat-icon">⏱️</div>
-                                <div class="stat-value" id="answerly-time-limit">15 min</div>
-                                <div class="stat-label">Time Limit</div>
-                            </div>
-                            <div class="answerly-stat-card">
-                                <div class="stat-icon">💬</div>
-                                <div class="stat-value" id="answerly-questions-count">0</div>
-                                <div class="stat-label">Questions Answered</div>
+
+                            <!-- Slack -->
+                            <div class="connection-card" data-source="slack">
+                                <div class="connection-header">
+                                    <div class="connection-icon">💬</div>
+                                    <h3>Slack</h3>
+                                </div>
+                                <p class="connection-description">Access team conversations, channels, and shared knowledge from Slack</p>
+                                <div class="connection-status disconnected">
+                                    <span class="status-indicator"></span>
+                                    <span>Not Connected</span>
+                                </div>
+                                <button class="btn-primary" onclick="connectSlack()">Connect</button>
                             </div>
                         </div>
 
@@ -477,17 +472,11 @@
                 </div>
             </div>
 
-            <!-- User Profile View -->
-            <div id="user-profile-view" class="dashboard-view">
-                <div class="dashboard-container">
-                    <section class="profile-section">
-                        <h1>Your Profile</h1>
-                        <div class="profile-card">
-                            <h3>Account Information</h3>
-                            <div class="profile-info">
-                                <div class="info-row">
-                                    <span class="info-label">Name:</span>
-                                    <span id="profile-name" class="info-value">User</span>
+                            <!-- Google Sheets -->
+                            <div class="connection-card" data-source="googleSheets">
+                                <div class="connection-header">
+                                    <div class="connection-icon">📊</div>
+                                    <h3>Google Sheets</h3>
                                 </div>
                                 <div class="info-row">
                                     <span class="info-label">Email:</span>
@@ -496,12 +485,11 @@
                             </div>
                         </div>
 
-                        <div class="profile-card">
-                            <h3>Subscription</h3>
-                            <div class="subscription-info">
-                                <div class="info-row">
-                                    <span class="info-label">Current Plan:</span>
-                                    <span id="profile-plan" class="info-value plan-badge">Free</span>
+                            <!-- Notion -->
+                            <div class="connection-card" data-source="notion">
+                                <div class="connection-header">
+                                    <div class="connection-icon">📝</div>
+                                    <h3>Notion</h3>
                                 </div>
                                 <div class="info-row">
                                     <span class="info-label">Meeting Limit:</span>
@@ -513,12 +501,18 @@
                             </button>
                         </div>
 
-                        <div class="profile-card danger-zone">
-                            <h3 style="color: var(--error-color);">Danger Zone</h3>
-                            <p style="margin-bottom: 16px; color: var(--text-secondary);">Once you delete your account, there is no going back. Please be certain.</p>
-                            <div class="delete-account-section">
-                                <input type="text" id="delete-confirm-input" placeholder="Type DELETE to confirm" style="padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; width: 100%; max-width: 300px;">
-                                <button class="btn-danger" onclick="deleteAccount()">Delete Account</button>
+                            <!-- Confluence -->
+                            <div class="connection-card" data-source="confluence">
+                                <div class="connection-header">
+                                    <div class="connection-icon">🌐</div>
+                                    <h3>Confluence</h3>
+                                </div>
+                                <p class="connection-description">Connect to Confluence spaces, pages, and team documentation</p>
+                                <div class="connection-status disconnected">
+                                    <span class="status-indicator"></span>
+                                    <span>Not Connected</span>
+                                </div>
+                                <button class="btn-primary" onclick="connectConfluence()">Connect</button>
                             </div>
                         </div>
                     </section>
@@ -648,6 +642,63 @@
                     </section>
                 </div>
             </div>
+            </div>
+            <!-- End Home Tab -->
+
+            <!-- Brain Tab -->
+            <div id="brain-tab" class="dashboard-tab">
+                <div class="brain-container">
+                    <section class="brain-header">
+                        <h1>🧠 Company Brain</h1>
+                        <p class="brain-subtitle">All your connected knowledge organized by topic</p>
+                        <div class="brain-stats">
+                            <div class="stat-card">
+                                <span class="stat-number" id="total-items">0</span>
+                                <span class="stat-label">Total Items</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="total-topics">0</span>
+                                <span class="stat-label">Topics</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="total-sources">0</span>
+                                <span class="stat-label">Sources</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Topic Filter -->
+                    <section class="topic-filter">
+                        <div class="filter-controls">
+                            <input type="text" id="brain-search" placeholder="Search brain..." class="search-input">
+                            <select id="topic-filter" class="filter-select" onchange="filterBrainByTopic()">
+                                <option value="all">All Topics</option>
+                            </select>
+                            <select id="source-filter" class="filter-select" onchange="filterBrainBySource()">
+                                <option value="all">All Sources</option>
+                                <option value="documentation">Documentation</option>
+                                <option value="slack">Slack</option>
+                                <option value="sheets">Google Sheets</option>
+                                <option value="notion">Notion</option>
+                                <option value="confluence">Confluence</option>
+                            </select>
+                        </div>
+                    </section>
+
+                    <!-- Brain Content organized by Topics -->
+                    <section class="brain-content">
+                        <div id="brain-topics-list">
+                            <div class="empty-brain-state">
+                                <div class="empty-icon">🧠</div>
+                                <h3>Your Brain is Empty</h3>
+                                <p>Connect data sources from the Dashboard to start building your company knowledge base</p>
+                                <button class="btn-primary" onclick="showDashboardTab(event, 'home')">Go to Dashboard</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <!-- End Brain Tab -->
         </main>
     </div>
 
@@ -706,7 +757,7 @@
 
                 <div class="form-actions">
                     <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
-                    <button class="btn-primary" onclick="submitDocumentation()">Connect</button>
+                    <button class="btn-primary" onclick="submitDocumentation()">Sync</button>
                 </div>
             </div>
 
@@ -725,8 +776,10 @@
                 <pre id="view-doc-content" style="margin: 0; font-family: 'Courier New', monospace; font-size: 14px; white-space: pre-wrap; word-wrap: break-word;">Loading document content...</pre>
             </div>
 
-            <div class="form-actions">
-                <button class="btn-secondary" onclick="closeViewDocumentModal()">Close</button>
+                <div class="form-actions">
+                    <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
+                    <button class="btn-primary" onclick="submitSlackConfig()">Sync</button>
+                </div>
             </div>
         </div>
     </div>
@@ -781,10 +834,9 @@
                     </div>
                 </div>
 
-                <div style="text-align: center;">
-                    <button class="btn-secondary" onclick="stopAnswerly()" style="padding: 12px 32px; font-size: 16px;">
-                        🛑 Stop Listening
-                    </button>
+                <div class="form-actions">
+                    <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
+                    <button class="btn-primary" onclick="submitSheetsConfig()">Sync</button>
                 </div>
             </div>
         </div>
@@ -803,15 +855,10 @@
                 <input type="text" id="edit-doc-title" placeholder="Document title">
             </div>
 
-            <div class="form-group">
-                <label for="edit-doc-category">Category</label>
-                <select id="edit-doc-category">
-                    <option value="api">API Documentation</option>
-                    <option value="user-guide">User Guides</option>
-                    <option value="technical">Technical Documentation</option>
-                    <option value="help">Help Articles</option>
-                    <option value="other">Other</option>
-                </select>
+                <div class="form-actions">
+                    <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
+                    <button class="btn-primary" onclick="submitNotionConfig()">Sync</button>
+                </div>
             </div>
 
             <div class="form-group">
@@ -847,12 +894,163 @@
         </div>
     </div>
 
-    <!-- Answerly Floating Pop-up -->
-    <div id="answerly-popup" class="answerly-popup">
-        <div class="answerly-popup-header">
-            <div>
-                <span class="answerly-popup-title">Listening...</span>
-                <div class="answerly-popup-timer" id="popup-timer">00:00</div>
+                <div class="form-actions">
+                    <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
+                    <button class="btn-primary" onclick="submitConfluenceConfig()">Sync</button>
+                </div>
+            </div>
+
+            <!-- Zoom Connection Form -->
+            <div id="zoom-form" class="connection-form">
+                <h2>Connect Zoom</h2>
+                <p class="form-description">Configure Meeting Mind integration with your Zoom account</p>
+
+                <div class="info-box">
+                    <h4>Setup Steps:</h4>
+                    <ul>
+                        <li>1. Create a Zoom App in the Zoom Marketplace</li>
+                        <li>2. Configure webhook subscriptions</li>
+                        <li>3. Enter your credentials below</li>
+                    </ul>
+                </div>
+
+                <div class="form-group">
+                    <label for="zoom-account-id">Zoom Account ID</label>
+                    <input type="text" id="zoom-account-id" placeholder="Your Zoom Account ID" required>
+                    <span class="field-hint">Found in your Zoom App Credentials</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="zoom-client-id">Client ID</label>
+                    <input type="text" id="zoom-client-id" placeholder="Your Zoom Client ID" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="zoom-client-secret">Client Secret</label>
+                    <input type="password" id="zoom-client-secret" placeholder="Your Zoom Client Secret" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="zoom-webhook-token">Webhook Secret Token</label>
+                    <input type="password" id="zoom-webhook-token" placeholder="Webhook verification token">
+                    <span class="field-hint">Used to verify webhook authenticity</span>
+                </div>
+
+                <div class="info-box">
+                    <h4>Webhook URL (copy to Zoom App settings):</h4>
+                    <code style="display: block; padding: 8px; background: white; border-radius: 4px; margin-top: 8px;">
+                        <span id="zoom-webhook-url"></span>
+                    </code>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
+                    <button class="btn-primary" onclick="submitZoomConfig()">Connect Zoom</button>
+                </div>
+            </div>
+
+            <!-- Microsoft Teams Connection Form -->
+            <div id="teams-form" class="connection-form">
+                <h2>Connect Microsoft Teams</h2>
+                <p class="form-description">Integrate Meeting Mind with Microsoft Teams meetings</p>
+
+                <div class="info-box">
+                    <h4>Prerequisites:</h4>
+                    <ul>
+                        <li>✓ Azure AD tenant administrator access</li>
+                        <li>✓ Ability to register applications in Azure Portal</li>
+                    </ul>
+                </div>
+
+                <div class="form-group">
+                    <label for="teams-tenant-id">Microsoft 365 Tenant ID</label>
+                    <input type="text" id="teams-tenant-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required>
+                    <span class="field-hint">Found in Azure Portal > Azure Active Directory</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="teams-client-id">Application (Client) ID</label>
+                    <input type="text" id="teams-client-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required>
+                    <span class="field-hint">From your registered Azure AD app</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="teams-client-secret">Client Secret Value</label>
+                    <input type="password" id="teams-client-secret" placeholder="Your client secret" required>
+                    <span class="field-hint">Generate in Azure Portal > Certificates & secrets</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="teams-user-email">Teams User Email</label>
+                    <input type="email" id="teams-user-email" placeholder="you@company.com">
+                    <span class="field-hint">Your Microsoft 365 work email</span>
+                </div>
+
+                <div class="info-box">
+                    <h4>Required API Permissions:</h4>
+                    <ul style="font-size: 13px;">
+                        <li>• OnlineMeetings.Read.All</li>
+                        <li>• Calendars.Read</li>
+                        <li>• User.Read</li>
+                    </ul>
+                    <p style="margin-top: 8px; font-size: 13px;">Redirect URI: <code id="teams-redirect-uri"></code></p>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
+                    <button class="btn-primary" onclick="submitTeamsConfig()">Authorize Teams</button>
+                </div>
+            </div>
+
+            <!-- Google Meet Connection Form -->
+            <div id="meet-form" class="connection-form">
+                <h2>Connect Google Meet</h2>
+                <p class="form-description">Enable Meeting Mind for your Google Meet sessions</p>
+
+                <div class="info-box">
+                    <h4>Setup Requirements:</h4>
+                    <ul>
+                        <li>✓ Google Cloud Project with Meet API enabled</li>
+                        <li>✓ OAuth 2.0 credentials configured</li>
+                    </ul>
+                </div>
+
+                <div class="form-group">
+                    <label for="meet-project-id">Google Cloud Project ID</label>
+                    <input type="text" id="meet-project-id" placeholder="your-project-id" required>
+                    <span class="field-hint">From Google Cloud Console</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="meet-client-id">OAuth Client ID</label>
+                    <input type="text" id="meet-client-id" placeholder="xxxxx.apps.googleusercontent.com" required>
+                    <span class="field-hint">From Credentials page in Google Cloud Console</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="meet-client-secret">OAuth Client Secret</label>
+                    <input type="password" id="meet-client-secret" placeholder="Your client secret" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="meet-user-email">Google Account Email</label>
+                    <input type="email" id="meet-user-email" placeholder="you@gmail.com">
+                    <span class="field-hint">Google account for authentication</span>
+                </div>
+
+                <div class="info-box">
+                    <h4>Required APIs & Scopes:</h4>
+                    <ul style="font-size: 13px;">
+                        <li>• Google Calendar API</li>
+                        <li>• Google Meet API</li>
+                    </ul>
+                    <p style="margin-top: 8px; font-size: 13px;">Authorized redirect URI: <code id="meet-redirect-uri"></code></p>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-secondary" onclick="closeConnectionModal()">Cancel</button>
+                    <button class="btn-primary" onclick="submitMeetConfig()">Authorize Google Meet</button>
+                </div>
             </div>
             <button class="answerly-popup-close" onclick="closeAnswerlyPopup()">×</button>
         </div>

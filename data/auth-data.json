@@ -1,0 +1,95 @@
+{
+  "users": [
+    [
+      "ebcb49f45722c59ef70a8b6a2e502d91",
+      {
+        "id": "ebcb49f45722c59ef70a8b6a2e502d91",
+        "name": "Shanna Morris",
+        "email": "shanna747@yahoo.com",
+        "passwordHash": "7cbab066da25fe3f5c35ad8cf72ef00eb1813018a283cabcc16efc3090cf4bb3",
+        "company": "",
+        "subscription": "free",
+        "createdAt": "2025-09-30T17:00:03.688Z",
+        "dataSources": {
+          "documentation": {
+            "connected": true,
+            "files": [],
+            "url": "https://docs.claude.com/en/docs/claude-code/overview",
+            "category": "help",
+            "tags": [
+              "#overview"
+            ],
+            "uploadedAt": "2025-09-30T17:13:44.058Z",
+            "connectedAt": "2025-09-30T17:13:44.058Z"
+          },
+          "slack": {
+            "connected": true,
+            "workspace": "acme-3ag4538.slack.com",
+            "channels": [],
+            "connectedAt": "2025-09-30T20:29:40.810Z"
+          },
+          "googleSheets": {
+            "connected": true,
+            "sheetUrl": "https://docs.google.com/document/d/1KqjscPBEqxqmyuJSfmhSpPWQ7BBnq8KqmpDm0UBtgA4/edit?tab=t.0#heading=h.dgoq8eakbb59",
+            "refreshFrequency": "hourly",
+            "connectedAt": "2025-09-30T20:33:26.629Z"
+          },
+          "notion": {
+            "connected": false
+          },
+          "confluence": {
+            "connected": false
+          },
+          "zoom": {
+            "accountId": " 943 139 5416",
+            "clientId": "NagK1MnsQFCg3dGIlfSlEw",
+            "clientSecret": "vz2mN04RfCxmrpoYjcbpw",
+            "webhookToken": "1aUa8n8dVjpZnpq5IsGmTNohlNZ8iIQX",
+            "platform": "zoom",
+            "configuredAt": "2025-09-30T20:46:40.307Z",
+            "connected": true,
+            "connectedAt": "2025-09-30T20:46:40.307Z"
+          }
+        },
+        "subscriptionLimits": {
+          "meetingDuration": 15,
+          "monthlyMeetings": 10,
+          "features": [
+            "basic_transcription",
+            "company_brain",
+            "integrations"
+          ]
+        },
+        "brainData": [
+          {
+            "id": "5155a564e898c08cd7c8f285a9501325",
+            "source": "documentation",
+            "type": "url",
+            "content": "https://docs.claude.com/en/docs/claude-code/overview",
+            "category": "help",
+            "tags": [
+              "#overview"
+            ],
+            "addedAt": "2025-09-30T17:13:44.058Z"
+          }
+        ]
+      }
+    ]
+  ],
+  "sessions": [
+    [
+      "e149a6d8bc426390f034b529744433c30201c36969a77e920048d1e4cabca654",
+      {
+        "userId": "ebcb49f45722c59ef70a8b6a2e502d91",
+        "createdAt": 1759251603688
+      }
+    ],
+    [
+      "296a359c40f752018c806ad82993c55ec4ce1727daa26a6d5926e950e94d9586",
+      {
+        "userId": "ebcb49f45722c59ef70a8b6a2e502d91",
+        "createdAt": 1759251685250
+      }
+    ]
+  ]
+}

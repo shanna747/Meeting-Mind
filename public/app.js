@@ -387,6 +387,33 @@ function showKnowledgeHub() {
     loadKnowledgeHubDocuments();
 }
 
+function showDashboardTab(event, tabName) {
+    if (event) event.preventDefault();
+
+    // Update nav links
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    if (event) {
+        event.target.classList.add('active');
+    }
+
+    // Update tab content
+    document.querySelectorAll('.dashboard-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    const selectedTab = document.getElementById(`${tabName}-tab`);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+
+    // Load brain data if switching to brain tab
+    if (tabName === 'brain') {
+        loadBrainData();
+    }
+}
+
 // Plan selection
 function selectPlan(planType) {
     selectedSubscription = planType;
@@ -587,9 +614,13 @@ function updateConnectionUI(connections) {
             status.classList.add('connected');
             status.innerHTML = '<span class="status-indicator"></span><span>Connected</span>';
 
-            const actions = card.querySelector('.connection-actions');
-            const button = actions?.querySelector('.btn-primary');
-            if (button) button.textContent = 'Configure';
+            const button = card.querySelector('button');
+            // Product Documentation uses "Add" button
+            if (source === 'documentation') {
+                button.textContent = 'Add';
+            } else {
+                button.textContent = 'Sync';
+            }
         }
     });
 }
@@ -733,6 +764,14 @@ async function submitDocumentation() {
 
     try {
         const token = localStorage.getItem('token');
+
+        if (!token) {
+            alert('Please log in first to connect data sources');
+            closeConnectionModal();
+            showLogin();
+            return;
+        }
+
         const response = await fetch('/api/datasources/documentation/upload', {
             method: 'POST',
             headers: {
@@ -1646,102 +1685,156 @@ async function loadMeetingNotes() {
     }
 }
 
-function formatDuration(seconds) {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    if (minutes === 0) return `${secs}s`;
-    return `${minutes}m ${secs}s`;
+// Meeting platform connections
+function connectZoom() {
+    openConnectionModal('zoom-form');
+    // Set webhook URL
+    document.getElementById('zoom-webhook-url').textContent = window.location.origin + '/api/integrations/zoom/webhook';
 }
 
-function handleMeetingAction(select, meetingId) {
-    const action = select.value;
-    if (!action) return;
+function connectTeams() {
+    openConnectionModal('teams-form');
+    // Set redirect URI
+    document.getElementById('teams-redirect-uri').textContent = window.location.origin + '/api/integrations/teams/auth/callback';
+}
 
-    switch(action) {
-        case 'view':
-            viewMeetingDetails(meetingId);
-            break;
-        case 'delete':
-            deleteMeeting(meetingId);
-            break;
+function connectGoogleMeet() {
+    openConnectionModal('meet-form');
+    // Set redirect URI
+    document.getElementById('meet-redirect-uri').textContent = window.location.origin + '/api/integrations/google-meet/auth/callback';
+}
+
+// Meeting platform submit functions
+async function submitZoomConfig() {
+    const accountId = document.getElementById('zoom-account-id').value;
+    const clientId = document.getElementById('zoom-client-id').value;
+    const clientSecret = document.getElementById('zoom-client-secret').value;
+    const webhookToken = document.getElementById('zoom-webhook-token').value;
+
+    if (!accountId || !clientId || !clientSecret) {
+        alert('Please fill in all required fields');
+        return;
     }
 
-    // Reset dropdown
-    select.value = '';
-}
-
-async function viewMeetingDetails(meetingId) {
-    const token = localStorage.getItem('token');
-
     try {
-        const response = await fetch(`/api/meeting-notes/${meetingId}`, {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/integrations/zoom/configure', {
+            method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`
-            }
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                accountId,
+                clientId,
+                clientSecret,
+                webhookToken
+            })
         });
 
-        if (!response.ok) {
-            throw new Error('Failed to load meeting details');
+        const data = await response.json();
+        if (response.ok) {
+            alert('Zoom connected successfully! You can now use Meeting Mind in your Zoom meetings.');
+            closeConnectionModal();
+            loadConnectionStatus();
+        } else {
+            alert(data.error || 'Failed to configure Zoom');
         }
+    } catch (error) {
+        console.error('Zoom configuration error:', error);
+        alert('Failed to configure Zoom');
+    }
+}
+
+async function submitTeamsConfig() {
+    const tenantId = document.getElementById('teams-tenant-id').value;
+    const clientId = document.getElementById('teams-client-id').value;
+    const clientSecret = document.getElementById('teams-client-secret').value;
+    const userEmail = document.getElementById('teams-user-email').value;
+
+    if (!tenantId || !clientId || !clientSecret) {
+        alert('Please fill in all required fields');
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/integrations/teams/configure', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                tenantId,
+                clientId,
+                clientSecret,
+                userEmail
+            })
+        });
 
         const data = await response.json();
-        const meeting = data.meeting;
-
-        let questionsHTML = '';
-        if (meeting.questions && meeting.questions.length > 0) {
-            questionsHTML = meeting.questions.map((q, index) => `
-                <div style="margin-bottom: 16px; padding: 16px; background: white; border: 2px solid var(--border-color); border-left: 4px solid ${q.answered ? 'var(--primary-color)' : '#ef4444'}; border-radius: 8px;">
-                    <div style="margin-bottom: 8px; font-size: 15px; color: #1f2937; line-height: 1.6;">
-                        ${q.answered ? '✅ ' : ''}<strong>Question ${index + 1}:</strong> ${q.question}
-                    </div>
-                    ${q.answer ? `
-                        <div style="margin-top: 12px; font-size: 15px; color: #4b5563; line-height: 1.6;">
-                            <strong>Answer:</strong> ${q.answer}
-                        </div>
-                    ` : '<div style="margin-top: 8px; font-size: 14px; color: #6b7280; font-style: italic;">No answer provided</div>'}
-                    <div style="margin-top: 8px; font-size: 12px; color: #9ca3af;">
-                        ${new Date(q.timestamp).toLocaleString()}
-                    </div>
-                </div>
-            `).join('');
+        if (response.ok) {
+            if (data.authUrl) {
+                // Redirect to Microsoft OAuth
+                window.location.href = data.authUrl;
+            } else {
+                alert('Teams connected successfully!');
+                closeConnectionModal();
+                loadConnectionStatus();
+            }
         } else {
-            questionsHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px 20px; background: var(--background-alt); border-radius: 8px;">No questions recorded for this meeting.</p>';
+            alert(data.error || 'Failed to configure Teams');
         }
-
-        const detailsHTML = `
-            <h2 style="margin-bottom: 8px;">${meeting.title}</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">
-                📅 ${new Date(meeting.startTime).toLocaleString()} |
-                ⏱️ ${formatDuration(meeting.duration || 0)} |
-                💬 ${meeting.summary.totalQuestions || 0} Questions
-            </p>
-
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px;">
-                <div style="padding: 12px; background: var(--background-alt); border-radius: 8px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: 600; color: var(--primary-color);">${meeting.summary.totalQuestions || 0}</div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">Total Questions</div>
-                </div>
-                <div style="padding: 12px; background: #ecfdf5; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: 600; color: #10b981;">${meeting.summary.answeredQuestions || 0}</div>
-                    <div style="font-size: 12px; color: #065f46;">Answered</div>
-                </div>
-                <div style="padding: 12px; background: #fef3c7; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: 600; color: #f59e0b;">${meeting.summary.needsDocumentation || 0}</div>
-                    <div style="font-size: 12px; color: #92400e;">Needs Docs</div>
-                </div>
-            </div>
-
-            <h3 style="margin-bottom: 16px; font-size: 18px;">Questions & Answers</h3>
-            <div style="max-height: 500px; overflow-y: auto;">
-                ${questionsHTML}
-            </div>
-        `;
-
-        document.getElementById('meeting-details-content').innerHTML = detailsHTML;
-        document.getElementById('meeting-details-modal').classList.add('active');
     } catch (error) {
-        console.error('Error viewing meeting details:', error);
-        alert('Failed to load meeting details');
+        console.error('Teams configuration error:', error);
+        alert('Failed to configure Teams');
+    }
+}
+
+async function submitMeetConfig() {
+    const projectId = document.getElementById('meet-project-id').value;
+    const clientId = document.getElementById('meet-client-id').value;
+    const clientSecret = document.getElementById('meet-client-secret').value;
+    const userEmail = document.getElementById('meet-user-email').value;
+
+    if (!projectId || !clientId || !clientSecret) {
+        alert('Please fill in all required fields');
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/integrations/google-meet/configure', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                projectId,
+                clientId,
+                clientSecret,
+                userEmail
+            })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            if (data.authUrl) {
+                // Redirect to Google OAuth
+                window.location.href = data.authUrl;
+            } else {
+                alert('Google Meet connected successfully!');
+                closeConnectionModal();
+                loadConnectionStatus();
+            }
+        } else {
+            alert(data.error || 'Failed to configure Google Meet');
+        }
+    } catch (error) {
+        console.error('Google Meet configuration error:', error);
+        alert('Failed to configure Google Meet');
     }
 }
 
@@ -1967,6 +2060,209 @@ function updateTimerDisplay(seconds, timeLimit) {
         } else if (warningDiv) {
             warningDiv.style.display = 'none';
         }
+    }
+}
+
+// Brain Data Functions
+async function loadBrainData() {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await fetch('/api/brain/data', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.brainData) {
+            displayBrainData(data.brainData);
+            updateBrainStats(data.brainData);
+        }
+    } catch (error) {
+        console.error('Error loading brain data:', error);
+    }
+}
+
+function displayBrainData(brainData) {
+    const container = document.getElementById('brain-topics-list');
+
+    if (!brainData || brainData.length === 0) {
+        container.innerHTML = `
+            <div class="empty-brain-state">
+                <div class="empty-icon">🧠</div>
+                <h3>Your Brain is Empty</h3>
+                <p>Connect data sources from the Dashboard to start building your company knowledge base</p>
+                <button class="btn-primary" onclick="showDashboardTab(event, 'home')">Go to Dashboard</button>
+            </div>
+        `;
+        return;
+    }
+
+    // Group by category/topic
+    const grouped = {};
+    brainData.forEach(item => {
+        const category = item.category || 'General';
+        if (!grouped[category]) {
+            grouped[category] = [];
+        }
+        grouped[category].push(item);
+    });
+
+    // Populate topic filter
+    const topicFilter = document.getElementById('topic-filter');
+    topicFilter.innerHTML = '<option value="all">All Topics</option>';
+    Object.keys(grouped).forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = `${category} (${grouped[category].length})`;
+        topicFilter.appendChild(option);
+    });
+
+    // Display grouped data
+    let html = '';
+    Object.keys(grouped).sort().forEach(category => {
+        html += `
+            <div class="topic-section" data-topic="${category}">
+                <div class="topic-header">
+                    <h2>${category}</h2>
+                    <span class="item-count">${grouped[category].length} items</span>
+                </div>
+                <div class="topic-items">
+        `;
+
+        grouped[category].forEach(item => {
+            const icon = item.type === 'file' ? '📄' : '🔗';
+            const sourceIcon = {
+                'documentation': '📚',
+                'slack': '💬',
+                'sheets': '📊',
+                'notion': '📝',
+                'confluence': '📖'
+            }[item.source] || '📄';
+
+            html += `
+                <div class="brain-item" data-source="${item.source}" data-item-id="${item.id}">
+                    <div class="item-icon">${icon}</div>
+                    <div class="item-content">
+                        <div class="item-title">${item.filename || item.content}</div>
+                        <div class="item-meta">
+                            <span class="source-badge">${sourceIcon} ${item.source}</span>
+                            ${item.tags && item.tags.length > 0 ? item.tags.map(tag => `<span class="tag">${tag}</span>`).join('') : ''}
+                            <span class="date">${new Date(item.addedAt).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        ${item.type === 'url' ? `<button class="btn-icon" onclick="viewBrainItem('${item.id}')" title="View URL"><span>👁️</span></button>` : ''}
+                        <button class="btn-icon btn-delete" onclick="deleteBrainItem('${item.id}')" title="Delete"><span>🗑️</span></button>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function updateBrainStats(brainData) {
+    document.getElementById('total-items').textContent = brainData.length;
+
+    const topics = new Set(brainData.map(item => item.category || 'General'));
+    document.getElementById('total-topics').textContent = topics.size;
+
+    const sources = new Set(brainData.map(item => item.source));
+    document.getElementById('total-sources').textContent = sources.size;
+}
+
+function filterBrainByTopic() {
+    const selectedTopic = document.getElementById('topic-filter').value;
+    const sections = document.querySelectorAll('.topic-section');
+
+    sections.forEach(section => {
+        if (selectedTopic === 'all' || section.dataset.topic === selectedTopic) {
+            section.style.display = 'block';
+        } else {
+            section.style.display = 'none';
+        }
+    });
+}
+
+function filterBrainBySource() {
+    const selectedSource = document.getElementById('source-filter').value;
+    const items = document.querySelectorAll('.brain-item');
+
+    items.forEach(item => {
+        if (selectedSource === 'all' || item.dataset.source === selectedSource) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+async function viewBrainItem(itemId) {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/brain/item/${itemId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.item) {
+            // Open URL in new tab
+            if (data.item.type === 'url') {
+                window.open(data.item.content, '_blank');
+            }
+        } else {
+            alert(data.error || 'Failed to load item');
+        }
+    } catch (error) {
+        console.error('Error viewing brain item:', error);
+        alert('Failed to view item');
+    }
+}
+
+async function deleteBrainItem(itemId) {
+    if (!confirm('Are you sure you want to delete this item from your Brain?')) {
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/brain/item/${itemId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Remove item from UI
+            const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
+            if (itemElement) {
+                itemElement.remove();
+            }
+
+            // Reload brain data to update stats
+            loadBrainData();
+        } else {
+            alert(data.error || 'Failed to delete item');
+        }
+    } catch (error) {
+        console.error('Error deleting brain item:', error);
+        alert('Failed to delete item');
     }
 }
 

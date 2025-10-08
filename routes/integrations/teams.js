@@ -1,7 +1,45 @@
 const express = require('express');
 const router = express.Router();
 const meetingPlatformService = require('../../services/meetingPlatformService');
+const authService = require('../../services/authService');
 const axios = require('axios');
+
+// Microsoft Teams configuration endpoint
+router.post('/configure', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const user = await authService.verifyToken(token);
+    const { tenantId, clientId, clientSecret, userEmail } = req.body;
+
+    if (!tenantId || !clientId || !clientSecret) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Store Teams configuration
+    await authService.updateDataSource(user.id, 'teams', {
+      tenantId,
+      clientId,
+      clientSecret,
+      userEmail,
+      platform: 'teams',
+      configuredAt: new Date().toISOString()
+    });
+
+    // Generate OAuth URL for user authorization
+    const redirectUri = process.env.TEAMS_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/integrations/teams/auth/callback`;
+    const scopes = 'OnlineMeetings.Read.All Calendars.Read User.Read';
+    const authUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}`;
+
+    res.json({ success: true, authUrl });
+  } catch (error) {
+    console.error('Teams configuration error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Microsoft Teams webhook endpoint
 router.post('/webhook', async (req, res) => {
