@@ -818,7 +818,7 @@ function showTimeLimitWarning(data) {
 
 // Knowledge Hub Functions
 let allDocuments = [];
-let currentFilter = 'all';
+let currentFilter = 'active';
 
 async function loadKnowledgeHubDocuments() {
     try {
@@ -833,7 +833,9 @@ async function loadKnowledgeHubDocuments() {
         if (data.documents) {
             allDocuments = data.documents;
             updateKnowledgeHubStats();
-            displayDocuments(allDocuments);
+            // Default to showing active documents only
+            const activeDocs = allDocuments.filter(doc => doc.status === 'active');
+            displayDocuments(activeDocs);
             updateAgentCardVisibility();
         }
     } catch (error) {
@@ -915,6 +917,9 @@ function filterDocuments(filter) {
         filteredDocs = allDocuments.filter(doc => doc.status === 'active');
     } else if (filter === 'archived') {
         filteredDocs = allDocuments.filter(doc => doc.status === 'archived');
+    } else {
+        // Show all documents (active and archived)
+        filteredDocs = allDocuments;
     }
 
     displayDocuments(filteredDocs);

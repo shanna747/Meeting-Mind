@@ -87,7 +87,7 @@ router.post('/documentation/upload', upload.array('files', 10), async (req, res)
     // Upload files using fileStorage service
     const newFiles = await Promise.all(
       files.map(async (f) => {
-        const uploadedFile = await fileStorage.uploadFile(f, 'documentation');
+        const uploadedFile = await fileStorage.uploadFile(f, user.id, 'documentation');
         return {
           ...uploadedFile,
           category,
@@ -167,7 +167,23 @@ router.get('/documents/:docId/content', async (req, res) => {
     try {
       // Handle PDF files
       if (ext === '.pdf') {
-        const dataBuffer = await fs.readFile(doc.path);
+        let dataBuffer;
+        if (fileStorage.useS3) {
+          // Get file from S3
+          const command = new (require('@aws-sdk/client-s3').GetObjectCommand)({
+            Bucket: process.env.AWS_S3_BUCKET,
+            Key: doc.path
+          });
+          const response = await fileStorage.s3Client.send(command);
+          const chunks = [];
+          for await (const chunk of response.Body) {
+            chunks.push(chunk);
+          }
+          dataBuffer = Buffer.concat(chunks);
+        } else {
+          // Get file from local storage
+          dataBuffer = await fs.readFile(doc.path);
+        }
         const pdfData = await pdfParse(dataBuffer);
         const extractedText = pdfData.text || '[No text could be extracted from PDF]';
         return res.json({ content: extractedText, isBinary: false });
@@ -308,6 +324,13 @@ router.delete('/documents/:docId', async (req, res) => {
     const { docId } = req.params;
     const docs = user.dataSources?.documentation || {};
     const files = docs.files || [];
+
+    // Find the document to delete
+    const docToDelete = files.find(f => f.id === docId);
+    if (docToDelete && docToDelete.path) {
+      // Delete file from S3 or local storage
+      await fileStorage.deleteFile(docToDelete.path);
+    }
 
     const updatedFiles = files.filter(f => f.id !== docId);
 
