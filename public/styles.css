@@ -811,8 +811,32 @@ body {
     margin: 0 auto;
     padding: 0 40px 16px;
     display: flex;
-    gap: 8px;
+    gap: 12px;
     border-bottom: 2px solid var(--border-color);
+}
+
+.secondary-nav .nav-link {
+    background: transparent;
+    border: none;
+    padding: 10px 20px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    border-bottom: 3px solid transparent;
+}
+
+.secondary-nav .nav-link:hover {
+    background: var(--background-alt);
+    color: var(--primary-color);
+}
+
+.secondary-nav .nav-link.active {
+    color: var(--primary-color);
+    background: var(--background-alt);
+    border-bottom-color: var(--primary-color);
 }
 
 .dashboard-main {
@@ -1654,3 +1678,12 @@ body {
 .btn-icon span {
     display: block;
 }
+/* Dashboard View Management */
+.dashboard-view {
+    display: none;
+}
+
+.dashboard-view.active {
+    display: block;
+}
+
