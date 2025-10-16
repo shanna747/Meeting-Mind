@@ -14,7 +14,16 @@
     "@pinecone-database/pinecone": "^1.1.0",
     "aws-sdk": "^2.1692.0",
     "axios": "^1.6.0",
-    "multer": "^2.0.0-rc.4"
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.19.1",
+    "multer": "^2.0.0-rc.4",
+    "openai": "^6.3.0",
+    "pdf-parse": "^2.2.16",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "jest": "^29.7.0",

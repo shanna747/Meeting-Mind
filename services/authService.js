@@ -1,10 +1,12 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const User = require('../models/User');
 
 class AuthService {
   constructor() {
-    // Session storage (keep in-memory for tokens)
+    // Initialize storage
+    this.users = new Map();
     this.sessions = new Map();
     this.dataFile = path.join(__dirname, '../data/auth-data.json');
 
@@ -63,20 +65,26 @@ class AuthService {
    */
   async register(userData) {
     const { name, email, password, company, subscription } = userData;
+    const emailLower = email.toLowerCase();
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-      throw new Error('User already exists with this email');
+    // Check if user already exists in file storage
+    for (const [userId, user] of this.users.entries()) {
+      if (user.email === emailLower) {
+        throw new Error('User already exists with this email');
+      }
     }
 
     // Hash password
     const passwordHash = this.hashPassword(password);
 
-    // Create user document
-    const user = new User({
+    // Create user ID
+    const userId = this.generateId();
+
+    // Create user object
+    const user = {
+      _id: userId,
       name,
-      email: email.toLowerCase(),
+      email: emailLower,
       passwordHash,
       company: company || '',
       subscription: subscription || 'free',
@@ -86,20 +94,38 @@ class AuthService {
         googleSheets: { connected: false },
         notion: { connected: false },
         confluence: { connected: false }
-      }
-    });
+      },
+      brainData: [],
+      createdAt: new Date().toISOString()
+    };
 
-    // Save to database
-    await user.save();
+    // Save to file storage
+    this.users.set(userId, user);
+
+    // Try to save to MongoDB if available
+    try {
+      const dbUser = new User({
+        name,
+        email: emailLower,
+        passwordHash,
+        company: company || '',
+        subscription: subscription || 'free',
+        dataSources: user.dataSources
+      });
+      await dbUser.save();
+    } catch (error) {
+      // MongoDB not available, continue with file storage
+      console.log('MongoDB not available, using file storage');
+    }
 
     // Generate token
-    const token = this.generateToken(user._id.toString());
+    const token = this.generateToken(userId);
 
     // Save to disk
     this.saveData();
 
     return {
-      user: user.toSafeObject(),
+      user: this.sanitizeUser(user),
       token
     };
   }
@@ -108,26 +134,53 @@ class AuthService {
    * Login user
    */
   async login(email, password) {
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // Try to find user in file storage first
+    let user = null;
+    const emailLower = email.toLowerCase();
+
+    console.log('Login attempt for:', emailLower);
+    console.log('Available users:', Array.from(this.users.values()).map(u => u.email));
+
+    for (const [userId, userData] of this.users.entries()) {
+      if (userData.email === emailLower) {
+        user = { _id: userId, ...userData };
+        break;
+      }
+    }
+
+    // If not in file storage, try MongoDB (if connected)
+    if (!user) {
+      try {
+        const dbUser = await User.findOne({ email: emailLower });
+        if (dbUser) {
+          user = dbUser;
+        }
+      } catch (error) {
+        // MongoDB not available, continue with file storage
+      }
+    }
 
     if (!user) {
+      console.log('User not found for email:', emailLower);
       throw new Error('Invalid email or password');
     }
 
     // Verify password
     const passwordHash = this.hashPassword(password);
+    console.log('Password hash match:', passwordHash === user.passwordHash);
+
     if (passwordHash !== user.passwordHash) {
       throw new Error('Invalid email or password');
     }
 
     // Generate new token
-    const token = this.generateToken(user._id.toString());
+    const token = this.generateToken(user._id.toString ? user._id.toString() : user._id);
 
     // Save to disk
     this.saveData();
 
     return {
-      user: user.toSafeObject(),
+      user: user.toSafeObject ? user.toSafeObject() : this.sanitizeUser(user),
       token
     };
   }
@@ -359,6 +412,14 @@ class AuthService {
     }
 
     return { success: true };
+  }
+
+  /**
+   * Sanitize user object (remove sensitive data)
+   */
+  sanitizeUser(user) {
+    const { passwordHash, ...safeUser } = user;
+    return safeUser;
   }
 }
 

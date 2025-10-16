@@ -130,67 +130,61 @@
                 <h2>Create Your Account</h2>
                 <p class="auth-subtitle">Choose your subscription plan</p>
 
-                <!-- Subscription Plans -->
-                <div class="subscription-plans">
-                    <div class="plan-card" onclick="selectPlan('free')">
-                        <div class="plan-header">
-                            <h3>Basic</h3>
-                            <div class="plan-price">
-                                <span class="price">FREE</span>
-                            </div>
-                        </div>
-                        <ul class="plan-features">
-                            <li>✓ 15 minutes per meeting</li>
-                            <li>✓ Basic transcription</li>
-                            <li>✓ Company Brain access</li>
-                            <li>✓ All integrations</li>
-                            <li>✓ Support Docs</li>
-                        </ul>
-                        <input type="radio" name="subscription" value="free" id="plan-free" checked>
-                    </div>
-
-                    <div class="plan-card" onclick="selectPlan('pro')">
-                        <div class="plan-badge">Popular</div>
-                        <div class="plan-header">
-                            <h3>Pro</h3>
-                            <div class="plan-price">
-                                <span class="price">$11</span>
-                                <span class="period">/month</span>
-                            </div>
-                        </div>
-                        <ul class="plan-features">
-                            <li>✓ 30 minutes per meeting</li>
-                            <li>✓ Advanced transcription</li>
-                            <li>✓ Company Brain access</li>
-                            <li>✓ All integrations</li>
-                            <li>✓ Support Docs</li>
-                            <li>✓ Priority support</li>
-                        </ul>
-                        <input type="radio" name="subscription" value="pro" id="plan-pro">
-                    </div>
-
-                    <div class="plan-card" onclick="selectPlan('business')">
-                        <div class="plan-header">
-                            <h3>Business</h3>
-                            <div class="plan-price">
-                                <span class="price">$24</span>
-                                <span class="period">/month</span>
-                            </div>
-                        </div>
-                        <ul class="plan-features">
-                            <li>✓ 60 minutes per meeting</li>
-                            <li>✓ Premium transcription</li>
-                            <li>✓ Company Brain access</li>
-                            <li>✓ All integrations</li>
-                            <li>✓ Support Docs</li>
-                            <li>✓ Priority support</li>
-                            <li>✓ Custom features</li>
-                        </ul>
-                        <input type="radio" name="subscription" value="business" id="plan-business">
-                    </div>
-                </div>
-
                 <form id="register-form" onsubmit="handleRegister(event)">
+                    <!-- Subscription Plans -->
+                    <div class="subscription-plans">
+                        <div class="plan-card" onclick="selectPlan('free')">
+                            <div class="plan-header">
+                                <h3>Basic</h3>
+                                <div class="plan-price">
+                                    <span class="price">FREE</span>
+                                </div>
+                            </div>
+                            <ul class="plan-features">
+                                <li>✓ 15 minutes per meeting</li>
+                                <li>✓ Basic transcription</li>
+                                <li>✓ Product knowledge hub</li>
+                                <li>✓ Support Docs</li>
+                            </ul>
+                            <input type="radio" name="subscription" value="free" id="plan-free" checked>
+                        </div>
+
+                        <div class="plan-card" onclick="selectPlan('pro')">
+                            <div class="plan-badge">Popular</div>
+                            <div class="plan-header">
+                                <h3>Pro</h3>
+                                <div class="plan-price">
+                                    <span class="price">$11</span>
+                                    <span class="period">/month</span>
+                                </div>
+                            </div>
+                            <ul class="plan-features">
+                                <li>✓ 30 minutes per meeting</li>
+                                <li>✓ Advanced transcription</li>
+                                <li>✓ Product knowledge hub</li>
+                                <li>✓ Support Docs</li>
+                            </ul>
+                            <input type="radio" name="subscription" value="pro" id="plan-pro">
+                        </div>
+
+                        <div class="plan-card" onclick="selectPlan('business')">
+                            <div class="plan-header">
+                                <h3>Business</h3>
+                                <div class="plan-price">
+                                    <span class="price">$24</span>
+                                    <span class="period">/month</span>
+                                </div>
+                            </div>
+                            <ul class="plan-features">
+                                <li>✓ 60 minutes per meeting</li>
+                                <li>✓ Premium transcription</li>
+                                <li>✓ Product knowledge hub</li>
+                                <li>✓ Support Docs</li>
+                                <li>✓ Custom features</li>
+                            </ul>
+                            <input type="radio" name="subscription" value="business" id="plan-business">
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label for="register-name">Full Name</label>
                         <input type="text" id="register-name" required placeholder="John Doe">
@@ -393,9 +387,9 @@
                 </div>
             </div>
             <div class="secondary-nav">
-                <button class="nav-link active" onclick="showDashboardHome()">Dashboard</button>
-                <button class="nav-link" onclick="showProjects()">Projects</button>
+                <button class="nav-link active" onclick="showDashboardHome()">Agent</button>
                 <button class="nav-link" onclick="showMeetings()">Meetings</button>
+                <button class="nav-link" onclick="showProjects()">Projects</button>
                 <button class="nav-link" onclick="showOnboarding()">Onboarding</button>
             </div>
         </header>
@@ -442,6 +436,13 @@
                         </div>
                     </div>
 
+                    <!-- Turn on Answerly CTA (hidden by default) -->
+                    <div id="answerly-activation-cta" style="display: none; text-align: center; background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%); padding: 40px; border-radius: 12px; margin-bottom: 40px; color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+                        <h3 style="margin: 0 0 12px 0; font-size: 24px;">Ready to Go Live!</h3>
+                        <p style="margin: 0 0 20px 0; opacity: 0.9;">You've uploaded documents. Activate Answerly to get real-time answers during your meetings.</p>
+                        <button class="btn-answerly" onclick="showAnswerlyModal()" style="background: white; color: var(--primary-color); font-size: 18px; padding: 14px 32px; border: none;">Turn On Answerly</button>
+                    </div>
+
                     <!-- Recent Activity -->
                     <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 40px;">
                         <h3 style="margin: 0 0 20px 0; font-size: 20px;">Recent Activity</h3>
@@ -449,32 +450,6 @@
                             <p style="color: var(--text-secondary); text-align: center; padding: 40px 0;">No recent activity</p>
                         </div>
                     </div>
-
-                    <!-- Answerly Agent Section -->
-                    <section class="knowledge-base-section">
-                        <div class="section-header">
-                            <div>
-                                <h2>🎙️ Answerly Agent</h2>
-                                <p class="section-subtitle">Activate the AI agent to listen and answer questions during your meeting</p>
-                            </div>
-                        </div>
-
-                        <div class="connections-grid" style="max-width: 600px; margin: 0 auto;">
-                            <!-- Go Live Button -->
-                            <div class="connection-card" data-source="answerly-agent" id="agent-card">
-                                <div class="connection-header">
-                                    <div class="connection-icon">🎙️</div>
-                                    <h3>Go Live</h3>
-                                </div>
-                                <p class="connection-description">Start listening to your meeting and get real-time answers from your knowledge base</p>
-                                <div class="connection-status disconnected">
-                                    <span class="status-indicator"></span>
-                                    <span>Ready</span>
-                                </div>
-                                <button class="btn-answerly" id="answerly-button" onclick="showAnswerlyModal()">Go Live</button>
-                            </div>
-                        </div>
-                    </section>
                 </div>
             </div>
 
@@ -514,13 +489,6 @@
                                 <h2>Meetings</h2>
                                 <p class="section-subtitle" id="meetings-subtitle">Upload documents for Answerly to reference during meetings</p>
                             </div>
-                        </div>
-
-                        <!-- Turn on Answerly CTA (hidden by default) -->
-                        <div id="answerly-activation-cta" style="display: none; text-align: center; background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%); padding: 40px; border-radius: 12px; margin: 30px 0; color: white;">
-                            <h3 style="margin: 0 0 12px 0; font-size: 24px;">Ready to Go Live!</h3>
-                            <p style="margin: 0 0 20px 0; opacity: 0.9;">You've uploaded documents. Activate Answerly to get real-time answers during your meetings.</p>
-                            <button class="btn-answerly" onclick="showAnswerlyModal()" style="background: white; color: var(--primary-color); font-size: 18px; padding: 14px 32px; border: none;">Turn On Answerly</button>
                         </div>
 
                         <!-- Knowledge Library -->
@@ -588,22 +556,49 @@
                             </div>
                         </div>
 
-                        <!-- Days 1-30 Checklist -->
-                        <div style="background: white; border-radius: 12px; padding: 30px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-                            <h3 style="margin: 0 0 20px 0; font-size: 20px; color: var(--primary-color);">📋 Days 1-30: Getting Started</h3>
-                            <div id="checklist-1-30"></div>
+                        <!-- Days 1-30 Checklist Card -->
+                        <div class="onboarding-card" onclick="toggleOnboardingCard('card-1-30')">
+                            <div class="onboarding-card-header">
+                                <div>
+                                    <h3 style="margin: 0; font-size: 20px; color: var(--primary-color);">📋 Days 1-30: Getting Started</h3>
+                                    <p style="margin: 8px 0 0 0; color: var(--text-secondary); font-size: 14px;">Foundation and orientation tasks</p>
+                                </div>
+                                <div class="expand-icon" id="icon-card-1-30">▼</div>
+                            </div>
+                            <div class="onboarding-card-content" id="content-card-1-30" style="display: none;">
+                                <div id="checklist-1-30"></div>
+                                <button class="btn-secondary" style="margin-top: 16px;" onclick="event.stopPropagation(); addOnboardingItem('1-30')">+ Add Item</button>
+                            </div>
                         </div>
 
-                        <!-- Days 30-60 Checklist -->
-                        <div style="background: white; border-radius: 12px; padding: 30px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-                            <h3 style="margin: 0 0 20px 0; font-size: 20px; color: var(--primary-color);">🎯 Days 30-60: Building Momentum</h3>
-                            <div id="checklist-30-60"></div>
+                        <!-- Days 30-60 Checklist Card -->
+                        <div class="onboarding-card" onclick="toggleOnboardingCard('card-30-60')">
+                            <div class="onboarding-card-header">
+                                <div>
+                                    <h3 style="margin: 0; font-size: 20px; color: var(--primary-color);">🎯 Days 30-60: Building Momentum</h3>
+                                    <p style="margin: 8px 0 0 0; color: var(--text-secondary); font-size: 14px;">Intermediate project management tasks</p>
+                                </div>
+                                <div class="expand-icon" id="icon-card-30-60">▼</div>
+                            </div>
+                            <div class="onboarding-card-content" id="content-card-30-60" style="display: none;">
+                                <div id="checklist-30-60"></div>
+                                <button class="btn-secondary" style="margin-top: 16px;" onclick="event.stopPropagation(); addOnboardingItem('30-60')">+ Add Item</button>
+                            </div>
                         </div>
 
-                        <!-- Days 60-90 Checklist -->
-                        <div style="background: white; border-radius: 12px; padding: 30px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-                            <h3 style="margin: 0 0 20px 0; font-size: 20px; color: var(--primary-color);">🚀 Days 60-90: Taking Ownership</h3>
-                            <div id="checklist-60-90"></div>
+                        <!-- Days 60-90 Checklist Card -->
+                        <div class="onboarding-card" onclick="toggleOnboardingCard('card-60-90')">
+                            <div class="onboarding-card-header">
+                                <div>
+                                    <h3 style="margin: 0; font-size: 20px; color: var(--primary-color);">🚀 Days 60-90: Taking Ownership</h3>
+                                    <p style="margin: 8px 0 0 0; color: var(--text-secondary); font-size: 14px;">Advanced responsibilities and leadership</p>
+                                </div>
+                                <div class="expand-icon" id="icon-card-60-90">▼</div>
+                            </div>
+                            <div class="onboarding-card-content" id="content-card-60-90" style="display: none;">
+                                <div id="checklist-60-90"></div>
+                                <button class="btn-secondary" style="margin-top: 16px;" onclick="event.stopPropagation(); addOnboardingItem('60-90')">+ Add Item</button>
+                            </div>
                         </div>
                     </section>
                 </div>
@@ -1112,6 +1107,35 @@
                 <div id="task-details-content">
                     <!-- Content will be loaded dynamically -->
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Onboarding Item Modal -->
+    <div id="add-onboarding-item-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="modal-close" onclick="closeOnboardingItemModal()">&times;</span>
+            <h2 id="onboarding-item-modal-title">Add Onboarding Item</h2>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Task Description *</label>
+                <textarea id="onboarding-item-text" placeholder="Enter task description" rows="4" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-family: inherit; font-size: 15px; resize: vertical;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Link (Optional)</label>
+                <input type="url" id="onboarding-item-url" placeholder="https://example.com/resource" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">Add a helpful link to documentation, tools, or resources</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Link Text (Optional)</label>
+                <input type="text" id="onboarding-item-link-text" placeholder="e.g., View Documentation" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px;">
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button onclick="closeOnboardingItemModal()" class="btn-secondary">Cancel</button>
+                <button onclick="saveOnboardingItem()" class="btn-primary">Save Item</button>
             </div>
         </div>
     </div>

@@ -29,6 +29,9 @@ function showDashboard() {
 
     // Check if user is new (no documents uploaded)
     checkIfNewUser();
+
+    // Show Meetings page by default after login
+    showMeetings();
 }
 
 async function checkIfNewUser() {
@@ -2492,8 +2495,8 @@ function showOnboarding() {
     });
     document.querySelector('.nav-link[onclick="showOnboarding()"]').classList.add('active');
 
-    // Load onboarding checklists
-    loadOnboardingChecklists();
+    // Initialize new onboarding system
+    initializeOnboarding();
 }
 
 // Onboarding Checklist Data
@@ -4106,6 +4109,168 @@ function displayAnswerlyResponse(question, answer) {
         </div>
     `;
     conversationDiv.innerHTML = responseHtml + conversationDiv.innerHTML;
+}
+
+// Onboarding card toggle functions
+let currentOnboardingPeriod = null;
+let currentOnboardingItemIndex = null;
+
+function toggleOnboardingCard(cardId) {
+    const content = document.getElementById(`content-${cardId}`);
+    const icon = document.getElementById(`icon-${cardId}`);
+
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.classList.add('expanded');
+    } else {
+        content.style.display = 'none';
+        icon.classList.remove('expanded');
+    }
+}
+
+function addOnboardingItem(period) {
+    currentOnboardingPeriod = period;
+    currentOnboardingItemIndex = null;
+
+    document.getElementById('onboarding-item-modal-title').textContent = 'Add Onboarding Item';
+    document.getElementById('onboarding-item-text').value = '';
+    document.getElementById('onboarding-item-url').value = '';
+    document.getElementById('onboarding-item-link-text').value = '';
+
+    document.getElementById('add-onboarding-item-modal').classList.add('active');
+}
+
+function editOnboardingItem(period, index) {
+    currentOnboardingPeriod = period;
+    currentOnboardingItemIndex = index;
+
+    const items = getOnboardingItems();
+    const item = items[period][index];
+
+    document.getElementById('onboarding-item-modal-title').textContent = 'Edit Onboarding Item';
+    document.getElementById('onboarding-item-text').value = item.text || '';
+    document.getElementById('onboarding-item-url').value = item.url || '';
+    document.getElementById('onboarding-item-link-text').value = item.linkText || '';
+
+    document.getElementById('add-onboarding-item-modal').classList.add('active');
+}
+
+function closeOnboardingItemModal() {
+    document.getElementById('add-onboarding-item-modal').classList.remove('active');
+    currentOnboardingPeriod = null;
+    currentOnboardingItemIndex = null;
+}
+
+function saveOnboardingItem() {
+    const text = document.getElementById('onboarding-item-text').value.trim();
+    const url = document.getElementById('onboarding-item-url').value.trim();
+    const linkText = document.getElementById('onboarding-item-link-text').value.trim();
+
+    if (!text) {
+        alert('Please enter a task description');
+        return;
+    }
+
+    const items = getOnboardingItems();
+    if (!items[currentOnboardingPeriod]) {
+        items[currentOnboardingPeriod] = [];
+    }
+
+    const newItem = {
+        text,
+        url: url || null,
+        linkText: linkText || 'View Resource',
+        completed: false
+    };
+
+    if (currentOnboardingItemIndex !== null) {
+        // Edit existing item
+        items[currentOnboardingPeriod][currentOnboardingItemIndex] = newItem;
+    } else {
+        // Add new item
+        items[currentOnboardingPeriod].push(newItem);
+    }
+
+    localStorage.setItem('onboardingItemsNew', JSON.stringify(items));
+    renderOnboardingList(currentOnboardingPeriod);
+    updateOnboardingProgress();
+    closeOnboardingItemModal();
+}
+
+function getOnboardingItems() {
+    return JSON.parse(localStorage.getItem('onboardingItemsNew') || '{"1-30":[],"30-60":[],"60-90":[]}');
+}
+
+function renderOnboardingList(period) {
+    const items = getOnboardingItems();
+    const container = document.getElementById(`checklist-${period}`);
+
+    if (!items[period] || items[period].length === 0) {
+        container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No items yet. Click "+ Add Item" to get started.</p>';
+        return;
+    }
+
+    container.innerHTML = items[period].map((item, index) => `
+        <div class="onboarding-item">
+            <input
+                type="checkbox"
+                ${item.completed ? 'checked' : ''}
+                onchange="toggleOnboardingItemComplete('${period}', ${index})"
+                style="width: 20px; height: 20px; cursor: pointer; flex-shrink: 0;"
+            >
+            <div class="onboarding-item-content">
+                <div class="onboarding-item-text" style="${item.completed ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${item.text}</div>
+                ${item.url ? `<a href="${item.url}" target="_blank" class="onboarding-item-link">🔗 ${item.linkText}</a>` : ''}
+            </div>
+            <div class="onboarding-item-actions">
+                <button onclick="editOnboardingItem('${period}', ${index})" title="Edit">✏️</button>
+                <button onclick="deleteOnboardingItem('${period}', ${index})" title="Delete" style="color: #ef4444;">🗑️</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function toggleOnboardingItemComplete(period, index) {
+    const items = getOnboardingItems();
+    items[period][index].completed = !items[period][index].completed;
+    localStorage.setItem('onboardingItemsNew', JSON.stringify(items));
+    renderOnboardingList(period);
+    updateOnboardingProgress();
+}
+
+function deleteOnboardingItem(period, index) {
+    if (!confirm('Are you sure you want to delete this item?')) return;
+
+    const items = getOnboardingItems();
+    items[period].splice(index, 1);
+    localStorage.setItem('onboardingItemsNew', JSON.stringify(items));
+    renderOnboardingList(period);
+    updateOnboardingProgress();
+}
+
+// Initialize onboarding lists on dashboard load
+function initializeOnboarding() {
+    ['1-30', '30-60', '60-90'].forEach(period => {
+        renderOnboardingList(period);
+    });
+    updateOnboardingProgress();
+}
+
+// Update progress calculation
+function updateOnboardingProgress() {
+    const items = getOnboardingItems();
+
+    ['1-30', '30-60', '60-90'].forEach(period => {
+        const periodItems = items[period] || [];
+        const completed = periodItems.filter(item => item.completed).length;
+        const total = periodItems.length;
+        const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+        const progressElement = document.getElementById(`days-${period}-progress`);
+        if (progressElement) {
+            progressElement.textContent = `${percentage}%`;
+        }
+    });
 }
 
 // Check if user is already logged in

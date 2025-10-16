@@ -1,12 +1,12 @@
 {
   "users": [
     [
-      "ebcb49f45722c59ef70a8b6a2e502d91",
+      "test123",
       {
-        "id": "ebcb49f45722c59ef70a8b6a2e502d91",
-        "name": "Shanna Morris",
-        "email": "shanna747@yahoo.com",
-        "passwordHash": "7cbab066da25fe3f5c35ad8cf72ef00eb1813018a283cabcc16efc3090cf4bb3",
+        "id": "test123",
+        "name": "Test User",
+        "email": "test@test.com",
+        "passwordHash": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
         "company": "",
         "subscription": "free",
         "createdAt": "2025-09-30T17:00:03.688Z",
@@ -74,6 +74,36 @@
           }
         ]
       }
+    ],
+    [
+      "381cf928ff9937407025dc87b5b82440",
+      {
+        "_id": "381cf928ff9937407025dc87b5b82440",
+        "name": "Shanna Morris",
+        "email": "727smorris@gmail.com",
+        "passwordHash": "7cbab066da25fe3f5c35ad8cf72ef00eb1813018a283cabcc16efc3090cf4bb3",
+        "company": "Acme.Inc",
+        "subscription": "free",
+        "dataSources": {
+          "documentation": {
+            "connected": false
+          },
+          "slack": {
+            "connected": false
+          },
+          "googleSheets": {
+            "connected": false
+          },
+          "notion": {
+            "connected": false
+          },
+          "confluence": {
+            "connected": false
+          }
+        },
+        "brainData": [],
+        "createdAt": "2025-10-12T18:24:08.919Z"
+      }
     ]
   ],
   "sessions": [
@@ -89,6 +119,20 @@
       {
         "userId": "ebcb49f45722c59ef70a8b6a2e502d91",
         "createdAt": 1759251685250
+      }
+    ],
+    [
+      "6bfdb14eda77b3ee05e3048eefb0195cf02268e4c233fee2a4fd42994d9b71b4",
+      {
+        "userId": "381cf928ff9937407025dc87b5b82440",
+        "createdAt": 1760458708769
+      }
+    ],
+    [
+      "eef1769e5fbb5fc7ce053e8c43ee6f9ae659c85122f8b451509790ca775f6455",
+      {
+        "userId": "381cf928ff9937407025dc87b5b82440",
+        "createdAt": 1760536767457
       }
     ]
   ]

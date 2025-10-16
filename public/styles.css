@@ -6,7 +6,7 @@
 
 :root {
     /* Modern Color Palette */
-    --primary-color: #6366f1;
+    --primary-color: #46ad71;
     --primary-hover: #4f46e5;
     --primary-light: #e0e7ff;
     --accent-color: #10b981;
@@ -559,7 +559,7 @@ body {
     background: white;
     border-radius: 16px;
     padding: 48px;
-    max-width: 500px;
+    max-width: 1200px;
     width: 100%;
     box-shadow: var(--shadow-xl);
 }
@@ -621,8 +621,15 @@ body {
 .subscription-plans {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    gap: 20px;
     margin-bottom: 40px;
+}
+
+/* Desktop mode - keep plans horizontal */
+@media (min-width: 769px) {
+    .subscription-plans {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 .plan-card {
@@ -1685,5 +1692,103 @@ body {
 
 .dashboard-view.active {
     display: block;
+}
+
+/* Onboarding Cards */
+.onboarding-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.onboarding-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+}
+
+.onboarding-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.expand-icon {
+    font-size: 20px;
+    transition: transform 0.3s ease;
+    color: var(--primary-color);
+}
+
+.expand-icon.expanded {
+    transform: rotate(-180deg);
+}
+
+.onboarding-card-content {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border-color);
+}
+
+.onboarding-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: var(--background-alt);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+}
+
+.onboarding-item:hover {
+    background: #f0f0f0;
+}
+
+.onboarding-item-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.onboarding-item-text {
+    font-size: 15px;
+    color: var(--text-primary);
+}
+
+.onboarding-item-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.onboarding-item-link:hover {
+    text-decoration: underline;
+}
+
+.onboarding-item-actions {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.onboarding-item-actions button {
+    padding: 4px 8px;
+    font-size: 12px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.onboarding-item-actions button:hover {
+    background: white;
 }
 

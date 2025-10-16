@@ -52,7 +52,7 @@ router.post('/full', async (req, res) => {
 });
 
 // Get current transcript
-router.get('/:meetingId?', (req, res) => {
+router.get('/:meetingId', (req, res) => {
   try {
     const { meetingId } = req.params;
     const transcript = transcriptService.getCurrentTranscript(meetingId);
@@ -86,7 +86,7 @@ router.post('/search', async (req, res) => {
 });
 
 // Clear transcript
-router.delete('/:meetingId?', (req, res) => {
+router.delete('/:meetingId', (req, res) => {
   try {
     const { meetingId } = req.params;
     transcriptService.clearTranscript(meetingId);
