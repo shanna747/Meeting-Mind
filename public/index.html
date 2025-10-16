@@ -388,9 +388,8 @@
             </div>
             <div class="secondary-nav">
                 <button class="nav-link active" onclick="showDashboardHome()">Agent</button>
+                <button class="nav-link" onclick="showDocuments()">Documents</button>
                 <button class="nav-link" onclick="showMeetings()">Meetings</button>
-                <button class="nav-link" onclick="showProjects()">Projects</button>
-                <button class="nav-link" onclick="showOnboarding()">Onboarding</button>
             </div>
         </header>
 
@@ -398,85 +397,52 @@
             <!-- Dashboard Home View -->
             <div id="dashboard-home-view" class="dashboard-view active">
                 <div class="dashboard-container">
-                    <!-- Dashboard Highlights -->
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 40px;">
-                        <!-- Active Projects Card -->
-                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 24px; color: white; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
-                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Active Projects</div>
-                            <div style="font-size: 36px; font-weight: bold; margin-bottom: 4px;" id="active-projects-count">0</div>
-                            <div style="font-size: 13px; opacity: 0.8;">Projects in progress</div>
-                        </div>
-
-                        <!-- Total Tasks Card -->
-                        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; padding: 24px; color: white; box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);">
-                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Open Tasks</div>
-                            <div style="font-size: 36px; font-weight: bold; margin-bottom: 4px;" id="open-tasks-count">0</div>
-                            <div style="font-size: 13px; opacity: 0.8;">Tasks to complete</div>
-                        </div>
-
-                        <!-- Documents Card -->
-                        <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 12px; padding: 24px; color: white; box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);">
-                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Documents</div>
-                            <div style="font-size: 36px; font-weight: bold; margin-bottom: 4px;" id="total-documents-count">0</div>
-                            <div style="font-size: 13px; opacity: 0.8;">Files uploaded</div>
-                        </div>
-
-                        <!-- Team Members Card -->
-                        <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border-radius: 12px; padding: 24px; color: white; box-shadow: 0 4px 12px rgba(67, 233, 123, 0.3);">
-                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Team Members</div>
-                            <div style="font-size: 36px; font-weight: bold; margin-bottom: 4px;" id="total-team-count">0</div>
-                            <div style="font-size: 13px; opacity: 0.8;">People across projects</div>
-                        </div>
-
-                        <!-- Total Project Value Card -->
-                        <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); border-radius: 12px; padding: 24px; color: white; box-shadow: 0 4px 12px rgba(250, 112, 154, 0.3);">
-                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Total Project Value</div>
-                            <div style="font-size: 36px; font-weight: bold; margin-bottom: 4px;" id="total-project-value">$0</div>
-                            <div style="font-size: 13px; opacity: 0.8;">Across all projects</div>
-                        </div>
+                    <!-- Empty State: No Documents -->
+                    <div id="agent-empty-state" style="display: none; text-align: center; padding: 80px 20px;">
+                        <div style="font-size: 80px; margin-bottom: 24px;">🤖</div>
+                        <h2 style="margin: 0 0 16px 0; font-size: 28px; color: var(--text-primary);">Welcome to Answerly Agent</h2>
+                        <p style="margin: 0 0 32px 0; font-size: 16px; color: var(--text-secondary); max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+                            Get started by uploading your first document. Answerly will use your documents to answer questions in real-time during meetings.
+                        </p>
+                        <button class="btn-primary" onclick="showDocuments()" style="font-size: 18px; padding: 16px 32px;">
+                            📚 Upload Your First Document
+                        </button>
                     </div>
 
-                    <!-- Turn on Answerly CTA (hidden by default) -->
-                    <div id="answerly-activation-cta" style="display: none; text-align: center; background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%); padding: 40px; border-radius: 12px; margin-bottom: 40px; color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
-                        <h3 style="margin: 0 0 12px 0; font-size: 24px;">Ready to Go Live!</h3>
-                        <p style="margin: 0 0 20px 0; opacity: 0.9;">You've uploaded documents. Activate Answerly to get real-time answers during your meetings.</p>
-                        <button class="btn-answerly" onclick="showAnswerlyModal()" style="background: white; color: var(--primary-color); font-size: 18px; padding: 14px 32px; border: none;">Turn On Answerly</button>
-                    </div>
-
-                    <!-- Recent Activity -->
-                    <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 40px;">
-                        <h3 style="margin: 0 0 20px 0; font-size: 20px;">Recent Activity</h3>
-                        <div id="recent-activity" style="min-height: 150px;">
-                            <p style="color: var(--text-secondary); text-align: center; padding: 40px 0;">No recent activity</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Projects View -->
-            <div id="projects-view" class="dashboard-view">
-                <div class="dashboard-container">
-                    <section class="knowledge-hub-section">
-                        <div class="section-header">
-                            <div>
-                                <h2>Projects</h2>
-                                <p class="section-subtitle">Manage your client projects and track progress</p>
+                    <!-- Active State: Has Documents -->
+                    <div id="agent-active-content" style="display: none;">
+                        <!-- Dashboard Highlights -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 40px;">
+                            <!-- Documents Card -->
+                            <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 12px; padding: 24px; color: white; box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);">
+                                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Documents</div>
+                                <div style="font-size: 36px; font-weight: bold; margin-bottom: 4px;" id="total-documents-count">0</div>
+                                <div style="font-size: 13px; opacity: 0.8;">Files uploaded</div>
                             </div>
-                            <div class="section-actions">
-                                <button class="btn-primary" id="create-project-btn" onclick="openCreateProjectModal()">+ Create Project</button>
+
+                            <!-- Questions Answered Card -->
+                            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; padding: 24px; color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Questions Answered</div>
+                                <div style="font-size: 36px; font-weight: bold; margin-bottom: 4px;" id="questions-answered-count">0</div>
+                                <div style="font-size: 13px; opacity: 0.8;">Last 30 days</div>
                             </div>
                         </div>
 
-                        <div id="projects-empty-state" class="empty-state" style="text-align: center; padding: 100px 20px; display: none;">
-                            <h3>No Projects Yet</h3>
-                            <p>Create your first project to get started</p>
-                            <button class="btn-primary" onclick="openCreateProjectModal()" style="margin-top: 20px; font-size: 16px;">+ New Project</button>
+                        <!-- Turn on Answerly CTA -->
+                        <div id="answerly-activation-cta" style="text-align: center; background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%); padding: 40px; border-radius: 12px; margin-bottom: 40px; color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+                            <h3 style="margin: 0 0 12px 0; font-size: 24px;">Ready to Go Live!</h3>
+                            <p style="margin: 0 0 20px 0; opacity: 0.9;">You've uploaded documents. Activate Answerly to get real-time answers during your meetings.</p>
+                            <button class="btn-answerly" onclick="showAnswerlyModal()" style="background: white; color: var(--primary-color); font-size: 18px; padding: 14px 32px; border: none;">Turn On Answerly</button>
                         </div>
 
-                        <div id="projects-grid" class="connections-grid" style="margin-top: 30px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px;">
-                            <!-- Projects will be loaded here -->
+                        <!-- Recent Activity -->
+                        <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 40px;">
+                            <h3 style="margin: 0 0 20px 0; font-size: 20px;">Recent Activity</h3>
+                            <div id="recent-activity" style="min-height: 150px;">
+                                <p style="color: var(--text-secondary); text-align: center; padding: 40px 0;">No recent activity</p>
+                            </div>
                         </div>
-                    </section>
+                    </div>
                 </div>
             </div>
 
@@ -487,7 +453,34 @@
                         <div class="section-header">
                             <div>
                                 <h2>Meetings</h2>
-                                <p class="section-subtitle" id="meetings-subtitle">Upload documents for Answerly to reference during meetings</p>
+                                <p class="section-subtitle">View your meeting history and Answerly agent usage</p>
+                            </div>
+                        </div>
+
+                        <!-- Meetings History -->
+                        <div style="background: white; border-radius: 12px; padding: 30px; margin-top: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                            <div id="meetings-empty-state" style="text-align: center; padding: 60px 20px;">
+                                <div style="font-size: 64px; margin-bottom: 16px;">📅</div>
+                                <h3 style="margin: 0 0 8px 0; color: var(--text-secondary);">No Meetings Yet</h3>
+                                <p style="margin: 0; color: var(--text-secondary);">Your meeting history will appear here once you start using Answerly</p>
+                            </div>
+
+                            <div id="meetings-list" style="display: none;">
+                                <!-- Meetings will be loaded here -->
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Documents View -->
+            <div id="documents-view" class="dashboard-view">
+                <div class="dashboard-container">
+                    <section class="knowledge-hub-section">
+                        <div class="section-header">
+                            <div>
+                                <h2>Documents</h2>
+                                <p class="section-subtitle" id="documents-subtitle">Upload and manage documents for Answerly to reference during meetings</p>
                             </div>
                         </div>
 
@@ -520,84 +513,6 @@
                                 <div id="meeting-documents-grid" style="display: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
                                     <!-- Meeting documents will be loaded here -->
                                 </div>
-                            </div>
-                        </div>
-                    </section>
-                </div>
-            </div>
-
-            <!-- Onboarding View -->
-            <div id="onboarding-view" class="dashboard-view">
-                <div class="dashboard-container">
-                    <section class="knowledge-hub-section">
-                        <div class="section-header">
-                            <div>
-                                <h2>🚀 Project Manager Onboarding</h2>
-                                <p class="section-subtitle">Complete your onboarding checklist to get started with your new company</p>
-                            </div>
-                        </div>
-
-                        <!-- Progress Overview -->
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 40px;">
-                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 24px; color: white;">
-                                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Days 1-30</div>
-                                <div style="font-size: 36px; font-weight: bold; margin-bottom: 4px;" id="days-1-30-progress">0%</div>
-                                <div style="font-size: 13px; opacity: 0.8;">Complete</div>
-                            </div>
-                            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; padding: 24px; color: white;">
-                                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Days 30-60</div>
-                                <div style="font-size: 36px; font-weight: bold; margin-bottom: 4px;" id="days-30-60-progress">0%</div>
-                                <div style="font-size: 13px; opacity: 0.8;">Complete</div>
-                            </div>
-                            <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 12px; padding: 24px; color: white;">
-                                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Days 60-90</div>
-                                <div style="font-size: 36px; font-weight: bold; margin-bottom: 4px;" id="days-60-90-progress">0%</div>
-                                <div style="font-size: 13px; opacity: 0.8;">Complete</div>
-                            </div>
-                        </div>
-
-                        <!-- Days 1-30 Checklist Card -->
-                        <div class="onboarding-card" onclick="toggleOnboardingCard('card-1-30')">
-                            <div class="onboarding-card-header">
-                                <div>
-                                    <h3 style="margin: 0; font-size: 20px; color: var(--primary-color);">📋 Days 1-30: Getting Started</h3>
-                                    <p style="margin: 8px 0 0 0; color: var(--text-secondary); font-size: 14px;">Foundation and orientation tasks</p>
-                                </div>
-                                <div class="expand-icon" id="icon-card-1-30">▼</div>
-                            </div>
-                            <div class="onboarding-card-content" id="content-card-1-30" style="display: none;">
-                                <div id="checklist-1-30"></div>
-                                <button class="btn-secondary" style="margin-top: 16px;" onclick="event.stopPropagation(); addOnboardingItem('1-30')">+ Add Item</button>
-                            </div>
-                        </div>
-
-                        <!-- Days 30-60 Checklist Card -->
-                        <div class="onboarding-card" onclick="toggleOnboardingCard('card-30-60')">
-                            <div class="onboarding-card-header">
-                                <div>
-                                    <h3 style="margin: 0; font-size: 20px; color: var(--primary-color);">🎯 Days 30-60: Building Momentum</h3>
-                                    <p style="margin: 8px 0 0 0; color: var(--text-secondary); font-size: 14px;">Intermediate project management tasks</p>
-                                </div>
-                                <div class="expand-icon" id="icon-card-30-60">▼</div>
-                            </div>
-                            <div class="onboarding-card-content" id="content-card-30-60" style="display: none;">
-                                <div id="checklist-30-60"></div>
-                                <button class="btn-secondary" style="margin-top: 16px;" onclick="event.stopPropagation(); addOnboardingItem('30-60')">+ Add Item</button>
-                            </div>
-                        </div>
-
-                        <!-- Days 60-90 Checklist Card -->
-                        <div class="onboarding-card" onclick="toggleOnboardingCard('card-60-90')">
-                            <div class="onboarding-card-header">
-                                <div>
-                                    <h3 style="margin: 0; font-size: 20px; color: var(--primary-color);">🚀 Days 60-90: Taking Ownership</h3>
-                                    <p style="margin: 8px 0 0 0; color: var(--text-secondary); font-size: 14px;">Advanced responsibilities and leadership</p>
-                                </div>
-                                <div class="expand-icon" id="icon-card-60-90">▼</div>
-                            </div>
-                            <div class="onboarding-card-content" id="content-card-60-90" style="display: none;">
-                                <div id="checklist-60-90"></div>
-                                <button class="btn-secondary" style="margin-top: 16px;" onclick="event.stopPropagation(); addOnboardingItem('60-90')">+ Add Item</button>
                             </div>
                         </div>
                     </section>

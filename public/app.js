@@ -30,8 +30,13 @@ function showDashboard() {
     // Check if user is new (no documents uploaded)
     checkIfNewUser();
 
-    // Show Meetings page by default after login
-    showMeetings();
+    // Show Agent page by default after login
+    showDashboardHome();
+
+    // Ensure dashboard highlights are loaded (in case of timing issues)
+    setTimeout(() => {
+        loadDashboardHighlights();
+    }, 100);
 }
 
 async function checkIfNewUser() {
@@ -46,31 +51,13 @@ async function checkIfNewUser() {
         const data = await response.json();
         const documents = data.documents || [];
 
-        if (documents.length === 0) {
-            // New user - show onboarding
-            showOnboarding();
-        } else {
-            // Existing user - show Answerly dashboard
-            showAnswerlyDashboard();
-        }
+        // Always show Answerly dashboard (onboarding removed)
+        showAnswerlyDashboard();
     } catch (error) {
         console.error('Error checking user status:', error);
         // Default to showing Answerly dashboard
         showAnswerlyDashboard();
     }
-}
-
-function showOnboarding() {
-    // Hide all dashboard views
-    document.querySelectorAll('.dashboard-view').forEach(view => {
-        view.classList.remove('active');
-    });
-
-    // Show onboarding view
-    document.getElementById('onboarding-view').classList.add('active');
-
-    // Setup file upload
-    setupOnboardingFileUpload();
 }
 
 function showAnswerlyDashboard() {
@@ -92,133 +79,6 @@ function showAnswerlyDashboard() {
     loadAnswerlyDashboardStats();
 }
 
-function setupOnboardingFileUpload() {
-    const dropZone = document.getElementById('onboarding-drop-zone');
-    const fileInput = document.getElementById('onboarding-files');
-    const fileList = document.getElementById('onboarding-file-list');
-    const submitBtn = document.getElementById('onboarding-submit-btn');
-
-    // Click to upload
-    dropZone.addEventListener('click', () => fileInput.click());
-
-    // File selection
-    fileInput.addEventListener('change', (e) => {
-        handleOnboardingFiles(e.target.files);
-        submitBtn.disabled = e.target.files.length === 0;
-    });
-
-    // Drag and drop
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.classList.add('dragover');
-    });
-
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('dragover');
-    });
-
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('dragover');
-        const files = e.dataTransfer.files;
-        fileInput.files = files;
-        handleOnboardingFiles(files);
-        submitBtn.disabled = files.length === 0;
-    });
-
-    function handleOnboardingFiles(files) {
-        fileList.innerHTML = '';
-        Array.from(files).forEach((file, index) => {
-            const fileItem = document.createElement('div');
-            fileItem.className = 'file-item';
-            fileItem.innerHTML = `
-                <span class="file-item-name">${file.name} (${formatFileSize(file.size)})</span>
-                <span class="file-item-remove" onclick="removeOnboardingFile(${index})">Remove</span>
-            `;
-            fileList.appendChild(fileItem);
-        });
-    }
-
-    function formatFileSize(bytes) {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-    }
-}
-
-function removeOnboardingFile(index) {
-    const fileInput = document.getElementById('onboarding-files');
-    const submitBtn = document.getElementById('onboarding-submit-btn');
-    const dt = new DataTransfer();
-    const files = Array.from(fileInput.files);
-
-    files.forEach((file, i) => {
-        if (i !== index) dt.items.add(file);
-    });
-
-    fileInput.files = dt.files;
-    fileInput.dispatchEvent(new Event('change'));
-    submitBtn.disabled = dt.files.length === 0;
-}
-
-async function submitOnboardingDocuments() {
-    const fileInput = document.getElementById('onboarding-files');
-    const formData = new FormData();
-
-    Array.from(fileInput.files).forEach(file => {
-        formData.append('files', file);
-    });
-
-    formData.append('category', 'general');
-    formData.append('tags', 'onboarding');
-
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/datasources/documentation/upload', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
-            body: formData
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-            // Transition to Answerly dashboard with slide animation
-            transitionToAnswerlyDashboard();
-        } else {
-            alert(data.error || 'Failed to upload documents');
-        }
-    } catch (error) {
-        console.error('Onboarding upload error:', error);
-        alert('Failed to upload documents');
-    }
-}
-
-function transitionToAnswerlyDashboard() {
-    const onboardingView = document.getElementById('onboarding-view');
-    const answerlyDashboard = document.getElementById('answerly-dashboard-view');
-
-    // Slide out onboarding to the left
-    onboardingView.classList.add('slide-out-left');
-
-    // Prepare Answerly dashboard to slide in from right
-    answerlyDashboard.classList.add('slide-in-right');
-    answerlyDashboard.classList.add('active');
-
-    // Trigger transition
-    setTimeout(() => {
-        answerlyDashboard.classList.remove('slide-in-right');
-        answerlyDashboard.classList.add('slide-in-center');
-
-        setTimeout(() => {
-            onboardingView.classList.remove('active', 'slide-out-left');
-        }, 500);
-    }, 50);
-
-    // Load stats
-    loadAnswerlyDashboardStats();
-}
 
 async function loadAnswerlyDashboardStats() {
     try {
@@ -1603,17 +1463,19 @@ async function generateAnswer(question) {
         if (responsesDiv) {
             const qaBlock = responsesDiv.firstChild;
             qaBlock.innerHTML = `
-                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">❓ ${question}</div>
+                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">
+                    ${answered ? '✅' : '❌'} ${question}
+                </div>
                 <div style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
-                    ${answered ? '✅' : ''} ${answer}
+                    ${answered ? answer : `<strong style="color: #dc3545;">Not found</strong><br><br>${answer}<br><br>💡 <em>Please upload relevant documents to answer this question in future meetings.</em>`}
                 </div>
             `;
         }
 
         // Update popup
         popupQA.innerHTML = `
-            <div class="popup-question">${answered ? '✅' : ''} ${question}</div>
-            <div class="popup-answer">${answer}</div>
+            <div class="popup-question">${answered ? '✅' : '❌'} ${question}</div>
+            <div class="popup-answer">${answered ? answer : '<strong style="color: #dc3545;">Not found</strong> - ' + answer}</div>
         `;
 
         // Auto-scroll popup to top
@@ -1928,23 +1790,9 @@ async function deleteMeeting(meetingId) {
 
 async function simulateAIAnswer(question) {
     try {
-        const token = localStorage.getItem('token');
-
-        // First, try to get documents from the knowledge base
-        const docsResponse = await fetch('/api/datasources/documents', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (!docsResponse.ok) {
-            throw new Error('Failed to fetch documents');
-        }
-
-        const docsData = await docsResponse.json();
-        const documents = docsData.documents || [];
+        // Get documents from localStorage
+        const storedDocs = localStorage.getItem('meetingDocuments');
+        const documents = storedDocs ? JSON.parse(storedDocs) : [];
 
         if (documents.length === 0) {
             return "I couldn't find any documents in your knowledge base. Please upload some documents first.";
@@ -1966,19 +1814,31 @@ async function simulateAIAnswer(question) {
         let allMatches = [];
 
         for (const doc of documents) {
-            if (doc.status !== 'active') continue;
-
-            // Try to get document content
+            // Try to extract text content from the document
             try {
-                const contentResponse = await fetch(`/api/datasources/documents/${doc.id}/content`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+                let content = '';
 
-                if (contentResponse.ok) {
-                    const contentData = await contentResponse.json();
-                    const content = contentData.content || '';
+                // For text files, decode the base64 data
+                if (doc.type === 'text/plain' || doc.type === 'application/json' ||
+                    doc.type === 'text/markdown' || doc.type === 'text/html') {
+                    // Decode base64 to text
+                    const base64Data = doc.data.split(',')[1]; // Remove data:type;base64, prefix
+                    content = atob(base64Data);
+                } else if (doc.type === 'application/pdf') {
+                    // For PDFs, we'll extract text from base64
+                    // Note: This is a simplified approach. For better PDF parsing,
+                    // we'd need a library like pdf.js
+                    const base64Data = doc.data.split(',')[1];
+                    const binaryString = atob(base64Data);
+                    // Extract visible text from PDF (basic approach)
+                    content = binaryString.replace(/[^\x20-\x7E\n]/g, ' ');
+                } else {
+                    // Skip non-text documents
+                    console.log('Skipping non-text document:', doc.name);
+                    continue;
+                }
+
+                if (content) {
                     const contentLower = content.toLowerCase();
 
                     // Enhanced scoring: each keyword gets points, partial matches count
@@ -2020,7 +1880,7 @@ async function simulateAIAnswer(question) {
                     }
                 }
             } catch (err) {
-                console.error('Error reading document:', err);
+                console.error('Error reading document:', doc.name, err);
             }
         }
 
@@ -2052,7 +1912,7 @@ async function simulateAIAnswer(question) {
             // Combine snippets or use first one
             const resultSnippet = snippets.length > 0 ? snippets[0] : content.substring(0, 500);
 
-            return `Based on "${bestMatch.doc.originalName}" (matched: ${bestMatch.matchedKeywords.join(', ')}):\n\n${resultSnippet}`;
+            return `Based on "${bestMatch.doc.name}" (matched: ${bestMatch.matchedKeywords.join(', ')}):\n\n${resultSnippet}`;
         } else {
             return `I searched through ${documents.length} document(s) but couldn't find relevant information. Keywords searched: ${keywords.join(', ')}. Try rephrasing your question or check if your documents contain this information.`;
         }
@@ -2344,126 +2204,85 @@ function showDashboardHome() {
 }
 
 function loadDashboardHighlights() {
-    // Load projects from localStorage
-    const storedProjects = localStorage.getItem('projects');
-    const allProjects = storedProjects ? JSON.parse(storedProjects) : [];
+    console.log('loadDashboardHighlights called');
 
-    // Filter active projects
-    const activeProjects = allProjects.filter(p => !p.archived);
+    // Count meeting documents from localStorage
+    const storedMeetingDocs = localStorage.getItem('meetingDocuments');
+    const meetingDocuments = storedMeetingDocs ? JSON.parse(storedMeetingDocs) : [];
+    const totalDocumentsCount = meetingDocuments.length;
 
-    // Count active projects
-    document.getElementById('active-projects-count').textContent = activeProjects.length;
+    // Calculate questions answered in last 30 days
+    const storedMeetings = localStorage.getItem('meetingsHistory');
+    const meetings = storedMeetings ? JSON.parse(storedMeetings) : [];
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Count open tasks across all projects
-    let openTasksCount = 0;
-    let totalDocumentsCount = 0;
-    let teamMembersSet = new Set();
-    let recentActivities = [];
+    const questionsAnsweredLast30Days = meetings
+        .filter(meeting => new Date(meeting.date) >= thirtyDaysAgo)
+        .reduce((total, meeting) => total + (meeting.questionsAnswered || 0), 0);
 
-    activeProjects.forEach(project => {
-        const projectData = JSON.parse(localStorage.getItem(`project_${project.id}`) || '{}');
+    console.log('Document count:', totalDocumentsCount);
+    console.log('Questions answered (30 days):', questionsAnsweredLast30Days);
 
-        // Count open tasks
-        if (projectData.timeline) {
-            const openTasks = projectData.timeline.filter(t => !t.completed);
-            openTasksCount += openTasks.length;
+    // Get UI elements
+    const emptyState = document.getElementById('agent-empty-state');
+    const activeContent = document.getElementById('agent-active-content');
 
-            // Collect recent task activity
-            projectData.timeline.forEach(task => {
-                recentActivities.push({
-                    type: 'task',
-                    projectName: project.clientName,
-                    title: task.title || task.name,
-                    timestamp: new Date(task.createdAt),
-                    completed: task.completed
-                });
-            });
+    console.log('Empty state element:', emptyState);
+    console.log('Active content element:', activeContent);
+
+    // Show appropriate content based on document count
+    if (totalDocumentsCount === 0) {
+        // Show empty state
+        console.log('Showing empty state');
+        if (emptyState) {
+            emptyState.style.display = 'block';
         }
-
-        // Count documents
-        if (projectData.documents) {
-            totalDocumentsCount += projectData.documents.length;
+        if (activeContent) {
+            activeContent.style.display = 'none';
         }
-
-        // Count unique team members
-        if (project.teamMembers) {
-            project.teamMembers.forEach(member => {
-                teamMembersSet.add(member.email);
-            });
-        }
-
-        // Collect chat activity
-        if (projectData.chat) {
-            projectData.chat.forEach(chat => {
-                recentActivities.push({
-                    type: 'chat',
-                    projectName: project.clientName,
-                    title: chat.text.substring(0, 50) + (chat.text.length > 50 ? '...' : ''),
-                    timestamp: new Date(chat.createdAt),
-                    author: chat.author
-                });
-            });
-        }
-    });
-
-    document.getElementById('open-tasks-count').textContent = openTasksCount;
-    document.getElementById('total-documents-count').textContent = totalDocumentsCount;
-    document.getElementById('total-team-count').textContent = teamMembersSet.size;
-
-    // Calculate total project value
-    let totalProjectValue = 0;
-    activeProjects.forEach(project => {
-        const value = parseFloat(project.contractValue) || 0;
-        totalProjectValue += value;
-    });
-    document.getElementById('total-project-value').textContent = `$${totalProjectValue.toLocaleString()}`;
-
-    // Display recent activity (last 5 items)
-    recentActivities.sort((a, b) => b.timestamp - a.timestamp);
-    const recentFive = recentActivities.slice(0, 5);
-
-    const activityContainer = document.getElementById('recent-activity');
-    if (recentFive.length === 0) {
-        activityContainer.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px 0;">No recent activity</p>';
     } else {
-        activityContainer.innerHTML = recentFive.map(activity => {
-            let icon = '';
-            let actionText = '';
+        // Show active content with Answerly activation
+        console.log('Showing active content');
+        if (emptyState) {
+            emptyState.style.display = 'none';
+        }
+        if (activeContent) {
+            activeContent.style.display = 'block';
+        }
 
-            if (activity.type === 'task') {
-                icon = activity.completed ? '✅' : '📋';
-                actionText = activity.completed ? 'Completed task' : 'Created task';
-            } else if (activity.type === 'chat') {
-                icon = '💬';
-                actionText = 'Posted message';
-            }
+        // Update document count
+        const docCountElement = document.getElementById('total-documents-count');
+        if (docCountElement) {
+            docCountElement.textContent = totalDocumentsCount;
+        }
 
-            return `
-                <div style="display: flex; gap: 16px; padding: 16px; border-bottom: 1px solid var(--border-color); align-items: start;">
-                    <div style="font-size: 24px;">${icon}</div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: 600; margin-bottom: 4px;">${actionText} in ${activity.projectName}</div>
-                        <div style="color: var(--text-secondary); font-size: 14px; margin-bottom: 4px;">${activity.title}</div>
-                        <div style="color: var(--text-secondary); font-size: 12px;">${activity.timestamp.toLocaleString()}</div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        // Update questions answered count
+        const questionsCountElement = document.getElementById('questions-answered-count');
+        if (questionsCountElement) {
+            questionsCountElement.textContent = questionsAnsweredLast30Days;
+        }
+
+        // Display recent activity (empty since projects removed)
+        const activityContainer = document.getElementById('recent-activity');
+        if (activityContainer) {
+            activityContainer.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px 0;">No recent activity</p>';
+        }
     }
 }
 
-function showProjects() {
+function showDocuments() {
     document.querySelectorAll('.dashboard-view').forEach(view => {
         view.classList.remove('active');
     });
-    document.getElementById('projects-view').classList.add('active');
+    document.getElementById('documents-view').classList.add('active');
 
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
     });
-    document.querySelector('.nav-link[onclick="showProjects()"]').classList.add('active');
+    document.querySelector('.nav-link[onclick="showDocuments()"]').classList.add('active');
 
-    loadProjects();
+    loadMeetingDocuments();
 }
 
 function showMeetings() {
@@ -2477,1367 +2296,7 @@ function showMeetings() {
     });
     document.querySelector('.nav-link[onclick="showMeetings()"]').classList.add('active');
 
-    loadMeetingDocuments();
-}
-
-function showOnboarding() {
-    document.querySelectorAll('.dashboard-view').forEach(view => {
-        view.classList.remove('active');
-    });
-    // Show onboarding view
-    const onboardingView = document.getElementById('onboarding-view');
-    if (onboardingView) {
-        onboardingView.classList.add('active');
-    }
-
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-    });
-    document.querySelector('.nav-link[onclick="showOnboarding()"]').classList.add('active');
-
-    // Initialize new onboarding system
-    initializeOnboarding();
-}
-
-// Onboarding Checklist Data
-const onboardingData = {
-    '1-30': [
-        'Complete HR paperwork and benefits enrollment',
-        'Set up email, Slack, and necessary software accounts',
-        'Meet with your manager to review role expectations',
-        'Schedule 1-on-1s with key team members',
-        'Review company organizational chart and reporting structure',
-        'Learn about company culture, values, and mission',
-        'Understand current projects and priorities',
-        'Set up your workspace and equipment',
-        'Review project management tools and processes',
-        'Shadow team meetings and standups',
-        'Complete required training and certifications',
-        'Review project documentation and standards'
-    ],
-    '30-60': [
-        'Take ownership of your first project or workstream',
-        'Establish regular check-ins with direct reports',
-        'Build relationships with cross-functional partners',
-        'Identify process improvements and share feedback',
-        'Lead your first team meeting or presentation',
-        'Create 30-60-90 day plan with your manager',
-        'Begin contributing to strategic planning discussions',
-        'Mentor or onboard a new team member',
-        'Review and optimize team workflows',
-        'Establish key performance metrics for your projects'
-    ],
-    '60-90': [
-        'Own end-to-end delivery of a major project',
-        'Present strategic recommendations to leadership',
-        'Implement a process improvement initiative',
-        'Build and maintain stakeholder relationships',
-        'Contribute to team hiring or resource planning',
-        'Lead cross-functional collaboration efforts',
-        'Establish yourself as a subject matter expert',
-        'Create documentation or training materials',
-        'Set goals for your next 6 months',
-        'Provide feedback on onboarding experience'
-    ]
-};
-
-function loadOnboardingChecklists() {
-    // Load saved progress from localStorage
-    const savedProgress = JSON.parse(localStorage.getItem('onboardingProgress') || '{}');
-    const savedItems = JSON.parse(localStorage.getItem('onboardingItems') || '{}');
-
-    // Initialize if not exists
-    if (!savedProgress['1-30']) savedProgress['1-30'] = [];
-    if (!savedProgress['30-60']) savedProgress['30-60'] = [];
-    if (!savedProgress['60-90']) savedProgress['60-90'] = [];
-
-    // Merge saved items with default items
-    ['1-30', '30-60', '60-90'].forEach(period => {
-        if (savedItems[period]) {
-            Object.keys(savedItems[period]).forEach(index => {
-                const idx = parseInt(index);
-                if (onboardingData[period][idx] !== undefined) {
-                    onboardingData[period][idx] = savedItems[period][index];
-                }
-            });
-        }
-    });
-
-    // Render each checklist
-    renderChecklist('1-30', onboardingData['1-30'], savedProgress['1-30']);
-    renderChecklist('30-60', onboardingData['30-60'], savedProgress['30-60']);
-    renderChecklist('60-90', onboardingData['60-90'], savedProgress['60-90']);
-
-    // Update progress percentages
-    updateOnboardingProgress();
-}
-
-function renderChecklist(period, items, completedItems) {
-    const container = document.getElementById(`checklist-${period}`);
-
-    container.innerHTML = items.map((item, index) => {
-        const isCompleted = completedItems.includes(index);
-        return `
-            <div style="padding: 16px; background: ${isCompleted ? 'var(--success-light)' : 'var(--background-alt)'}; border-radius: 8px; margin-bottom: 12px; transition: all 0.3s ease;">
-                <div style="display: flex; align-items: flex-start; gap: 16px; margin-bottom: 8px;">
-                    <input
-                        type="checkbox"
-                        ${isCompleted ? 'checked' : ''}
-                        onchange="toggleOnboardingItem('${period}', ${index})"
-                        style="width: 24px; height: 24px; cursor: pointer; flex-shrink: 0; margin-top: 4px;"
-                    >
-                    <div
-                        id="checklist-item-${period}-${index}"
-                        contenteditable="true"
-                        onblur="saveChecklistItem('${period}', ${index})"
-                        style="flex: 1; font-size: 15px; ${isCompleted ? 'text-decoration: line-through; color: var(--text-secondary);' : 'color: var(--text-color);'} outline: none; padding: 4px; border-radius: 4px; min-height: 24px;"
-                    >${item}</div>
-                    ${isCompleted ? '<span style="color: var(--success-color); font-size: 20px;">✓</span>' : ''}
-                </div>
-                <div style="display: flex; gap: 8px; margin-left: 40px; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
-                    <button type="button" onclick="formatChecklistText('${period}', ${index}, 'bold')" style="padding: 4px 10px; border: 1px solid var(--border-color); border-radius: 4px; background: white; cursor: pointer; font-weight: bold; font-size: 12px;">B</button>
-                    <button type="button" onclick="formatChecklistText('${period}', ${index}, 'italic')" style="padding: 4px 10px; border: 1px solid var(--border-color); border-radius: 4px; background: white; cursor: pointer; font-style: italic; font-size: 12px;">I</button>
-                    <button type="button" onclick="formatChecklistText('${period}', ${index}, 'underline')" style="padding: 4px 10px; border: 1px solid var(--border-color); border-radius: 4px; background: white; cursor: pointer; text-decoration: underline; font-size: 12px;">U</button>
-                    <button type="button" onclick="formatChecklistText('${period}', ${index}, 'insertUnorderedList')" style="padding: 4px 10px; border: 1px solid var(--border-color); border-radius: 4px; background: white; cursor: pointer; font-size: 12px;">• List</button>
-                    <button type="button" onclick="deleteChecklistItem('${period}', ${index})" style="padding: 4px 10px; border: 1px solid #ef4444; border-radius: 4px; background: white; cursor: pointer; color: #ef4444; font-size: 12px;">Delete</button>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    // Add new item button
-    container.innerHTML += `
-        <button type="button" onclick="addChecklistItem('${period}')" class="btn-secondary" style="width: 100%; padding: 12px; margin-top: 8px;">
-            + Add Item
-        </button>
-    `;
-}
-
-function toggleOnboardingItem(period, itemIndex) {
-    const savedProgress = JSON.parse(localStorage.getItem('onboardingProgress') || '{}');
-
-    if (!savedProgress[period]) savedProgress[period] = [];
-
-    const index = savedProgress[period].indexOf(itemIndex);
-    if (index > -1) {
-        // Remove from completed
-        savedProgress[period].splice(index, 1);
-    } else {
-        // Add to completed
-        savedProgress[period].push(itemIndex);
-    }
-
-    // Save to localStorage
-    localStorage.setItem('onboardingProgress', JSON.stringify(savedProgress));
-
-    // Re-render the specific checklist
-    renderChecklist(period, onboardingData[period], savedProgress[period]);
-
-    // Update progress
-    updateOnboardingProgress();
-}
-
-function updateOnboardingProgress() {
-    const savedProgress = JSON.parse(localStorage.getItem('onboardingProgress') || '{}');
-
-    // Calculate and update each period's progress
-    ['1-30', '30-60', '60-90'].forEach(period => {
-        const total = onboardingData[period].length;
-        const completed = (savedProgress[period] || []).length;
-        const percentage = Math.round((completed / total) * 100);
-
-        const displayPeriod = period === '1-30' ? 'days-1-30-progress' :
-                             period === '30-60' ? 'days-30-60-progress' :
-                             'days-60-90-progress';
-
-        document.getElementById(displayPeriod).textContent = `${percentage}%`;
-    });
-}
-
-function formatChecklistText(period, index, command) {
-    const element = document.getElementById(`checklist-item-${period}-${index}`);
-    if (element) {
-        element.focus();
-        document.execCommand(command, false, null);
-    }
-}
-
-function saveChecklistItem(period, index) {
-    const element = document.getElementById(`checklist-item-${period}-${index}`);
-    if (element) {
-        const newText = element.innerHTML;
-        onboardingData[period][index] = newText;
-
-        // Save to localStorage
-        const savedItems = JSON.parse(localStorage.getItem('onboardingItems') || '{}');
-        if (!savedItems[period]) savedItems[period] = {};
-        savedItems[period][index] = newText;
-        localStorage.setItem('onboardingItems', JSON.stringify(savedItems));
-    }
-}
-
-function addChecklistItem(period) {
-    const newItem = 'New checklist item';
-    onboardingData[period].push(newItem);
-
-    // Save to localStorage
-    const savedItems = JSON.parse(localStorage.getItem('onboardingItems') || '{}');
-    if (!savedItems[period]) savedItems[period] = {};
-    savedItems[period][onboardingData[period].length - 1] = newItem;
-    localStorage.setItem('onboardingItems', JSON.stringify(savedItems));
-
-    // Re-render
-    const savedProgress = JSON.parse(localStorage.getItem('onboardingProgress') || '{}');
-    renderChecklist(period, onboardingData[period], savedProgress[period] || []);
-    updateOnboardingProgress();
-}
-
-function deleteChecklistItem(period, index) {
-    if (!confirm('Are you sure you want to delete this item?')) {
-        return;
-    }
-
-    // Remove from data
-    onboardingData[period].splice(index, 1);
-
-    // Update localStorage items
-    const savedItems = JSON.parse(localStorage.getItem('onboardingItems') || '{}');
-    if (savedItems[period]) {
-        delete savedItems[period][index];
-        // Re-index remaining items
-        const newItems = {};
-        Object.keys(savedItems[period]).forEach(key => {
-            const keyIndex = parseInt(key);
-            if (keyIndex > index) {
-                newItems[keyIndex - 1] = savedItems[period][key];
-            } else if (keyIndex < index) {
-                newItems[keyIndex] = savedItems[period][key];
-            }
-        });
-        savedItems[period] = newItems;
-        localStorage.setItem('onboardingItems', JSON.stringify(savedItems));
-    }
-
-    // Update completed items indices
-    const savedProgress = JSON.parse(localStorage.getItem('onboardingProgress') || '{}');
-    if (savedProgress[period]) {
-        savedProgress[period] = savedProgress[period]
-            .filter(i => i !== index)
-            .map(i => i > index ? i - 1 : i);
-        localStorage.setItem('onboardingProgress', JSON.stringify(savedProgress));
-    }
-
-    // Re-render
-    renderChecklist(period, onboardingData[period], savedProgress[period] || []);
-    updateOnboardingProgress();
-}
-
-function openCreateProjectModal() {
-    document.getElementById('create-project-modal').style.display = 'block';
-    teamMembers = [];
-    document.getElementById('team-members-list').innerHTML = '';
-}
-
-function closeCreateProjectModal() {
-    document.getElementById('create-project-modal').style.display = 'none';
-    document.getElementById('project-client-name').value = '';
-    document.getElementById('project-description').innerHTML = '';
-    document.getElementById('project-logo').value = '';
-    document.getElementById('project-documents').value = '';
-    document.getElementById('project-contract-value').value = '';
-    document.getElementById('project-start-date').value = '';
-    document.getElementById('project-end-date').value = '';
-    document.getElementById('project-manager').value = '';
-    teamMembers = [];
-    document.getElementById('team-members-list').innerHTML = '';
-}
-
-function formatText(command) {
-    document.execCommand(command, false, null);
-    document.getElementById('project-description').focus();
-}
-
-function addTeamMember() {
-    const firstName = document.getElementById('team-member-firstname').value.trim();
-    const lastName = document.getElementById('team-member-lastname').value.trim();
-    const email = document.getElementById('team-member-email').value.trim();
-
-    if (!firstName || !lastName || !email) {
-        alert('Please fill in all team member fields');
-        return;
-    }
-
-    if (!email.includes('@')) {
-        alert('Please enter a valid email address');
-        return;
-    }
-
-    teamMembers.push({ firstName, lastName, email });
-
-    const membersList = document.getElementById('team-members-list');
-    const memberDiv = document.createElement('div');
-    memberDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--background-alt); border-radius: 6px; margin-bottom: 8px;';
-    memberDiv.innerHTML = `
-        <span>${firstName} ${lastName} (${email})</span>
-        <button onclick="removeTeamMember(${teamMembers.length - 1})" style="background: #ef4444; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer;">Remove</button>
-    `;
-    membersList.appendChild(memberDiv);
-
-    document.getElementById('team-member-firstname').value = '';
-    document.getElementById('team-member-lastname').value = '';
-    document.getElementById('team-member-email').value = '';
-}
-
-function removeTeamMember(index) {
-    teamMembers.splice(index, 1);
-    updateTeamMembersList();
-}
-
-function updateTeamMembersList() {
-    const membersList = document.getElementById('team-members-list');
-    membersList.innerHTML = '';
-    teamMembers.forEach((member, index) => {
-        const memberDiv = document.createElement('div');
-        memberDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--background-alt); border-radius: 6px; margin-bottom: 8px;';
-        memberDiv.innerHTML = `
-            <span>${member.firstName} ${member.lastName} (${member.email})</span>
-            <button onclick="removeTeamMember(${index})" style="background: #ef4444; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer;">Remove</button>
-        `;
-        membersList.appendChild(memberDiv);
-    });
-}
-
-async function createProject() {
-    const clientName = document.getElementById('project-client-name').value.trim();
-    const description = document.getElementById('project-description').innerHTML.trim();
-    const contractValue = document.getElementById('project-contract-value').value;
-    const startDate = document.getElementById('project-start-date').value;
-    const endDate = document.getElementById('project-end-date').value;
-    const projectManager = document.getElementById('project-manager').value.trim();
-
-    if (!clientName || !description || !startDate || !endDate || !projectManager) {
-        alert('Please fill in all required fields (marked with *)');
-        return;
-    }
-
-    const logoFile = document.getElementById('project-logo').files[0];
-    let logoUrl = '';
-
-    // Convert logo to base64 for local storage
-    if (logoFile) {
-        logoUrl = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(logoFile);
-        });
-    }
-
-    // Create project object
-    const project = {
-        id: Date.now().toString(),
-        clientName,
-        description,
-        contractValue: contractValue || 0,
-        startDate,
-        endDate,
-        projectManager,
-        teamMembers: [...teamMembers],
-        logo: logoUrl,
-        createdAt: new Date().toISOString()
-    };
-
-    // Store in local projects array
-    projects.push(project);
-
-    // Save to localStorage for persistence
-    localStorage.setItem('projects', JSON.stringify(projects));
-
-    alert('Project created successfully!');
-    closeCreateProjectModal();
-    loadProjects();
-}
-
-function editProject(projectId) {
-    const project = projects.find(p => p.id === projectId);
-    if (!project) return;
-
-    // Open the create project modal in edit mode
-    const modal = document.getElementById('create-project-modal');
-    modal.style.display = 'block';
-    modal.setAttribute('data-edit-mode', 'true');
-    modal.setAttribute('data-edit-id', projectId);
-
-    // Pre-populate form fields
-    document.getElementById('project-client-name').value = project.clientName;
-    document.getElementById('project-description').innerHTML = project.description;
-    document.getElementById('project-contract-value').value = project.contractValue;
-    document.getElementById('project-start-date').value = project.startDate;
-    document.getElementById('project-end-date').value = project.endDate;
-    document.getElementById('project-manager').value = project.projectManager;
-
-    // Load team members
-    teamMembers = [...project.teamMembers];
-    updateTeamMembersList();
-
-    // Change modal title and button text
-    const modalTitle = modal.querySelector('h2');
-    if (modalTitle) modalTitle.textContent = 'Edit Project';
-
-    const submitBtn = modal.querySelector('button[onclick="createProject()"]');
-    if (submitBtn) {
-        submitBtn.textContent = 'Update Project';
-        submitBtn.setAttribute('onclick', 'updateProject()');
-    }
-}
-
-async function updateProject() {
-    const modal = document.getElementById('create-project-modal');
-    const projectId = modal.getAttribute('data-edit-id');
-    const projectIndex = projects.findIndex(p => p.id === projectId);
-
-    if (projectIndex === -1) return;
-
-    const clientName = document.getElementById('project-client-name').value.trim();
-    const description = document.getElementById('project-description').innerHTML.trim();
-    const contractValue = document.getElementById('project-contract-value').value;
-    const startDate = document.getElementById('project-start-date').value;
-    const endDate = document.getElementById('project-end-date').value;
-    const projectManager = document.getElementById('project-manager').value.trim();
-
-    if (!clientName || !description || !startDate || !endDate || !projectManager) {
-        alert('Please fill in all required fields (marked with *)');
-        return;
-    }
-
-    const logoFile = document.getElementById('project-logo').files[0];
-    let logoUrl = projects[projectIndex].logo; // Keep existing logo if no new one
-
-    // Convert new logo to base64 if uploaded
-    if (logoFile) {
-        logoUrl = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(logoFile);
-        });
-    }
-
-    // Update project object
-    projects[projectIndex] = {
-        ...projects[projectIndex],
-        clientName,
-        description,
-        contractValue: contractValue || 0,
-        startDate,
-        endDate,
-        projectManager,
-        teamMembers: [...teamMembers],
-        logo: logoUrl,
-        updatedAt: new Date().toISOString()
-    };
-
-    // Save to localStorage
-    localStorage.setItem('projects', JSON.stringify(projects));
-
-    alert('Project updated successfully!');
-
-    // Reset modal to create mode
-    modal.removeAttribute('data-edit-mode');
-    modal.removeAttribute('data-edit-id');
-    const modalTitle = modal.querySelector('h2');
-    if (modalTitle) modalTitle.textContent = 'Create New Project';
-    const submitBtn = modal.querySelector('button[onclick="updateProject()"]');
-    if (submitBtn) {
-        submitBtn.textContent = 'Create Project';
-        submitBtn.setAttribute('onclick', 'createProject()');
-    }
-
-    closeCreateProjectModal();
-    loadProjects();
-}
-
-function loadProjects() {
-    // Load projects from localStorage
-    const storedProjects = localStorage.getItem('projects');
-    if (storedProjects) {
-        projects = JSON.parse(storedProjects);
-    }
-
-    const projectsGrid = document.getElementById('projects-grid');
-    const emptyState = document.getElementById('projects-empty-state');
-    const createBtn = document.getElementById('create-project-btn');
-
-    // Filter active (non-archived) projects
-    const activeProjects = projects.filter(p => !p.archived);
-
-    // Show/hide elements based on active project count
-    if (activeProjects.length === 0) {
-        emptyState.style.display = 'block';
-        projectsGrid.style.display = 'none';
-        createBtn.style.display = 'none';
-    } else {
-        emptyState.style.display = 'none';
-        projectsGrid.style.display = 'grid';
-        createBtn.style.display = 'block';
-
-        // Display project cards (only active projects)
-        projectsGrid.innerHTML = activeProjects.map(project => `
-            <div class="project-card" style="
-                background: white;
-                border-radius: 12px;
-                padding: 16px;
-                cursor: pointer;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-                transition: all 0.2s ease;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-                aspect-ratio: 1;
-                justify-content: center;
-                position: relative;
-                max-width: 200px;
-            " onmouseover="this.style.boxShadow='0 8px 24px rgba(0,0,0,0.15)'; this.style.transform='translateY(-4px)';" onmouseout="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'; this.style.transform='translateY(0)';">
-                <!-- Action Icons -->
-                <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; z-index: 10;">
-                    <button onclick="event.stopPropagation(); editProject('${project.id}')" title="Settings" style="background: transparent; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                        </svg>
-                    </button>
-                    <button onclick="event.stopPropagation(); archiveProject('${project.id}')" title="Archive" style="background: transparent; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="21 8 21 21 3 21 3 8"></polyline>
-                            <rect x="1" y="3" width="22" height="5"></rect>
-                            <line x1="10" y1="12" x2="14" y2="12"></line>
-                        </svg>
-                    </button>
-                </div>
-
-                <!-- Card Content (clickable to open project board) -->
-                <div onclick="viewProject('${project.id}')" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-                    ${project.logo ?
-                        `<img src="${project.logo}" alt="${project.clientName}" style="width: 60px; height: 60px; object-fit: contain; border-radius: 8px; margin-bottom: 12px;">`
-                        :
-                        `<div style="width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; color: white; font-size: 28px; font-weight: bold;">${project.clientName.charAt(0)}</div>`
-                    }
-                    <h3 style="margin: 0; font-size: 14px; color: var(--text-color); font-weight: 600;">${project.clientName}</h3>
-                </div>
-            </div>
-        `).join('');
-    }
-}
-
-function viewProject(projectId) {
-    const project = projects.find(p => p.id === projectId);
-    if (!project) return;
-
-    // Show project board modal
-    showProjectBoard(project);
-}
-
-function showProjectBoard(project) {
-    // Create fullscreen project board modal
-    const modal = document.createElement('div');
-    modal.id = 'project-board-modal';
-    modal.className = 'modal';
-    modal.style.cssText = 'display: block; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);';
-
-    modal.innerHTML = `
-        <div style="background: white; width: 100%; height: 100%; display: flex; flex-direction: column;">
-            <!-- Project Header -->
-            <div style="background: white; padding: 24px 40px; border-bottom: 2px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 20px;">
-                    ${project.logo ?
-                        `<img src="${project.logo}" alt="${project.clientName}" style="width: 60px; height: 60px; object-fit: contain; border-radius: 8px;">`
-                        :
-                        `<div style="width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 28px; font-weight: bold;">${project.clientName.charAt(0)}</div>`
-                    }
-                    <div>
-                        <h2 style="margin: 0 0 6px 0;">${project.clientName}</h2>
-                        <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">PM: ${project.projectManager} | Value: $${parseFloat(project.contractValue).toLocaleString()} | ${new Date(project.startDate).toLocaleDateString()} - ${new Date(project.endDate).toLocaleDateString()}</p>
-                    </div>
-                </div>
-                <button onclick="closeProjectBoard()" style="background: transparent; border: none; font-size: 32px; cursor: pointer; color: var(--text-secondary);">&times;</button>
-            </div>
-
-            <!-- Navigation Tabs -->
-            <div style="background: white; padding: 0 40px; border-bottom: 2px solid var(--border-color); display: flex; gap: 30px;">
-                <button class="project-tab active" onclick="switchProjectTab('${project.id}', 'overview')" data-tab="overview" style="background: transparent; border: none; padding: 16px 0; font-size: 15px; font-weight: 600; color: var(--primary-color); cursor: pointer; border-bottom: 3px solid var(--primary-color); transition: all 0.2s;">Overview</button>
-                <button class="project-tab" onclick="switchProjectTab('${project.id}', 'timeline')" data-tab="timeline" style="background: transparent; border: none; padding: 16px 0; font-size: 15px; font-weight: 600; color: var(--text-secondary); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s;">Timeline</button>
-                <button class="project-tab" onclick="switchProjectTab('${project.id}', 'team')" data-tab="team" style="background: transparent; border: none; padding: 16px 0; font-size: 15px; font-weight: 600; color: var(--text-secondary); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s;">Team Members</button>
-                <button class="project-tab" onclick="switchProjectTab('${project.id}', 'documents')" data-tab="documents" style="background: transparent; border: none; padding: 16px 0; font-size: 15px; font-weight: 600; color: var(--text-secondary); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s;">Documents</button>
-                <button class="project-tab" onclick="switchProjectTab('${project.id}', 'chat')" data-tab="chat" style="background: transparent; border: none; padding: 16px 0; font-size: 15px; font-weight: 600; color: var(--text-secondary); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s;">Chat</button>
-            </div>
-
-            <!-- Tab Content -->
-            <div style="flex: 1; overflow-y: auto; padding: 40px;">
-                <!-- Overview Tab -->
-                <div id="tab-overview-${project.id}" class="project-tab-content" style="display: block;">
-                    <div style="max-width: 1200px; margin: 0 auto;">
-                        <h3 style="margin: 0 0 24px 0; font-size: 22px; color: var(--text-color);">Project Information</h3>
-
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 30px;">
-                            <!-- Client Info Card -->
-                            <div style="background: white; border: 2px solid var(--border-color); border-radius: 12px; padding: 24px;">
-                                <h4 style="margin: 0 0 16px 0; font-size: 16px; color: var(--text-secondary);">Client Details</h4>
-                                <div style="margin-bottom: 12px;">
-                                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">Client Name</div>
-                                    <div style="font-size: 15px; font-weight: 600; color: var(--text-color);">${project.clientName}</div>
-                                </div>
-                                <div style="margin-bottom: 12px;">
-                                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">Project Manager</div>
-                                    <div style="font-size: 15px; font-weight: 600; color: var(--text-color);">${project.projectManager}</div>
-                                </div>
-                            </div>
-
-                            <!-- Timeline Card -->
-                            <div style="background: white; border: 2px solid var(--border-color); border-radius: 12px; padding: 24px;">
-                                <h4 style="margin: 0 0 16px 0; font-size: 16px; color: var(--text-secondary);">Timeline</h4>
-                                <div style="margin-bottom: 12px;">
-                                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">Start Date</div>
-                                    <div style="font-size: 15px; font-weight: 600; color: var(--text-color);">${new Date(project.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
-                                </div>
-                                <div style="margin-bottom: 12px;">
-                                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">End Date</div>
-                                    <div style="font-size: 15px; font-weight: 600; color: var(--text-color);">${new Date(project.endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
-                                </div>
-                            </div>
-
-                            <!-- Financial Card -->
-                            <div style="background: white; border: 2px solid var(--border-color); border-radius: 12px; padding: 24px;">
-                                <h4 style="margin: 0 0 16px 0; font-size: 16px; color: var(--text-secondary);">Financial</h4>
-                                <div style="margin-bottom: 12px;">
-                                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">Contract Value</div>
-                                    <div style="font-size: 24px; font-weight: 700; color: var(--primary-color);">$${parseFloat(project.contractValue || 0).toLocaleString()}</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Project Description -->
-                        <div style="background: white; border: 2px solid var(--border-color); border-radius: 12px; padding: 24px; margin-bottom: 30px;">
-                            <h4 style="margin: 0 0 16px 0; font-size: 16px; color: var(--text-secondary);">Project Description</h4>
-                            <div style="color: var(--text-color); font-size: 15px; line-height: 1.6;">${project.description}</div>
-                        </div>
-
-                        <!-- Quick Stats -->
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 20px; color: white;">
-                                <div style="font-size: 13px; opacity: 0.9; margin-bottom: 8px;">Team Members</div>
-                                <div style="font-size: 28px; font-weight: bold;">${(project.teamMembers || []).length}</div>
-                            </div>
-                            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; padding: 20px; color: white;">
-                                <div style="font-size: 13px; opacity: 0.9; margin-bottom: 8px;">Total Tasks</div>
-                                <div style="font-size: 28px; font-weight: bold;">${(project.tasks || []).length}</div>
-                            </div>
-                            <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 12px; padding: 20px; color: white;">
-                                <div style="font-size: 13px; opacity: 0.9; margin-bottom: 8px;">Documents</div>
-                                <div style="font-size: 28px; font-weight: bold;">${(project.documents || []).length}</div>
-                            </div>
-                            <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border-radius: 12px; padding: 20px; color: white;">
-                                <div style="font-size: 13px; opacity: 0.9; margin-bottom: 8px;">Project Status</div>
-                                <div style="font-size: 18px; font-weight: bold;">${project.archived ? 'Archived' : 'Active'}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Timeline Tab -->
-                <div id="tab-timeline-${project.id}" class="project-tab-content" style="display: none;">
-                    <div style="max-width: 1200px; margin: 0 auto;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                            <h3 style="margin: 0; font-size: 20px;">Project Tasks</h3>
-                            <button class="btn-primary" onclick="openAddTaskModal('${project.id}')">+ Add Task</button>
-                        </div>
-                        <div id="project-timeline-${project.id}" style="background: white; border-radius: 8px;">
-                            <div class="empty-state" style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
-                                <p>No tasks yet. Click "+ Add Task" to get started.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Team Members Tab -->
-                <div id="tab-team-${project.id}" class="project-tab-content" style="display: none;">
-                    <div style="max-width: 800px; margin: 0 auto;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                            <h3 style="margin: 0; font-size: 20px;">Team Members</h3>
-                            <button class="btn-primary" onclick="openAddTeamMemberModal('${project.id}')">+ Add Team Member</button>
-                        </div>
-
-                        <div id="team-members-list-${project.id}" style="background: white; border-radius: 8px; padding: 24px;">
-                            ${project.teamMembers && project.teamMembers.length > 0 ?
-                                project.teamMembers.map((member, index) => `
-                                    <div style="display: flex; align-items: center; gap: 16px; padding: 16px; border-bottom: 1px solid var(--border-color);">
-                                        <div style="width: 50px; height: 50px; background: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px;">${member.firstName.charAt(0)}${member.lastName.charAt(0)}</div>
-                                        <div style="flex: 1;">
-                                            <div style="font-weight: 600; font-size: 16px;">${member.firstName} ${member.lastName}</div>
-                                            <div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">${member.title || 'Team Member'}</div>
-                                            <div style="font-size: 14px; color: var(--text-secondary); margin-top: 4px;">${member.email}</div>
-                                        </div>
-                                        <button onclick="removeProjectTeamMember('${project.id}', ${index})" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;">Remove</button>
-                                    </div>
-                                `).join('')
-                                :
-                                `<p style="color: var(--text-secondary); text-align: center; padding: 40px;">No team members assigned.</p>`
-                            }
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Documents Tab -->
-                <div id="tab-documents-${project.id}" class="project-tab-content" style="display: none;">
-                    <div style="max-width: 1200px; margin: 0 auto;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                            <h3 style="margin: 0; font-size: 20px;">Project Documents</h3>
-                            <button class="btn-primary" onclick="uploadProjectDocument('${project.id}')">+ Upload Document</button>
-                        </div>
-                        <div id="project-documents-${project.id}" style="background: white; border-radius: 8px; padding: 24px;">
-                            <p style="color: var(--text-secondary); text-align: center; padding: 40px;">No documents uploaded.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Chat Tab -->
-                <div id="tab-chat-${project.id}" class="project-tab-content" style="display: none;">
-                    <div style="max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; height: calc(100vh - 400px);">
-                        <h3 style="margin: 0 0 24px 0; font-size: 20px;">Team Chat</h3>
-                        <div id="project-chat-${project.id}" style="flex: 1; background: white; border-radius: 8px; padding: 24px; overflow-y: auto; margin-bottom: 16px;">
-                            <p style="color: var(--text-secondary); font-style: italic; text-align: center;">No messages yet. Start the conversation!</p>
-                        </div>
-                        <div style="display: flex; gap: 12px;">
-                            <input type="text" id="chat-input-${project.id}" placeholder="Type a message..." style="flex: 1; padding: 14px 16px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14px;">
-                            <button class="btn-primary" onclick="sendChatMessage('${project.id}')">Send</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    // Load project data if it exists
-    loadProjectData(project.id);
-}
-
-function closeProjectBoard() {
-    const modal = document.getElementById('project-board-modal');
-    if (modal) {
-        modal.remove();
-    }
-}
-
-function switchProjectTab(projectId, tabName) {
-    // Hide all tab contents
-    const tabContents = document.querySelectorAll('.project-tab-content');
-    tabContents.forEach(content => content.style.display = 'none');
-
-    // Remove active class from all tabs
-    const tabs = document.querySelectorAll('.project-tab');
-    tabs.forEach(tab => {
-        tab.style.color = 'var(--text-secondary)';
-        tab.style.borderBottomColor = 'transparent';
-        tab.classList.remove('active');
-    });
-
-    // Show selected tab content
-    document.getElementById(`tab-${tabName}-${projectId}`).style.display = 'block';
-
-    // Activate selected tab
-    const activeTab = document.querySelector(`.project-tab[data-tab="${tabName}"]`);
-    if (activeTab) {
-        activeTab.style.color = 'var(--primary-color)';
-        activeTab.style.borderBottomColor = 'var(--primary-color)';
-        activeTab.classList.add('active');
-    }
-}
-
-function loadProjectData(projectId) {
-    // Load timeline items, chat, and documents from localStorage
-    const projectData = JSON.parse(localStorage.getItem(`project_${projectId}`) || '{}');
-
-    if (projectData.timeline && projectData.timeline.length > 0) {
-        displayTimelineItems(projectId, projectData.timeline);
-    }
-
-    if (projectData.chat && projectData.chat.length > 0) {
-        displayChatMessages(projectId, projectData.chat);
-    }
-
-    if (projectData.documents && projectData.documents.length > 0) {
-        displayProjectDocuments(projectId, projectData.documents);
-    }
-}
-
-let currentProjectId = null;
-
-function openAddTaskModal(projectId) {
-    currentProjectId = projectId;
-    const modal = document.getElementById('add-task-modal');
-    modal.style.display = 'block';
-
-    // Load team members for assignment dropdown
-    const project = projects.find(p => p.id === projectId);
-    const assigneeSelect = document.getElementById('task-assignee');
-    assigneeSelect.innerHTML = '<option value="">Select team member...</option>';
-
-    if (project && project.teamMembers) {
-        project.teamMembers.forEach(member => {
-            const option = document.createElement('option');
-            option.value = `${member.firstName} ${member.lastName}`;
-            option.textContent = `${member.firstName} ${member.lastName}`;
-            assigneeSelect.appendChild(option);
-        });
-    }
-
-    // Clear previous values
-    document.getElementById('task-title').value = '';
-    document.getElementById('task-description').innerHTML = '';
-    document.getElementById('task-assignee').value = '';
-    document.getElementById('task-due-date').value = '';
-    document.getElementById('task-files').value = '';
-}
-
-function closeAddTaskModal() {
-    document.getElementById('add-task-modal').style.display = 'none';
-    currentProjectId = null;
-}
-
-function formatTaskText(command) {
-    document.execCommand(command, false, null);
-    document.getElementById('task-description').focus();
-}
-
-async function createTask() {
-    const title = document.getElementById('task-title').value.trim();
-    const description = document.getElementById('task-description').innerHTML.trim();
-    const assignee = document.getElementById('task-assignee').value;
-    const dueDate = document.getElementById('task-due-date').value;
-    const filesInput = document.getElementById('task-files');
-
-    if (!title) {
-        alert('Please enter a task title');
-        return;
-    }
-
-    const projectData = JSON.parse(localStorage.getItem(`project_${currentProjectId}`) || '{}');
-    if (!projectData.timeline) projectData.timeline = [];
-
-    // Handle file attachments
-    const attachments = [];
-    if (filesInput.files.length > 0) {
-        for (let i = 0; i < filesInput.files.length; i++) {
-            const file = filesInput.files[i];
-            const fileData = await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.readAsDataURL(file);
-            });
-            attachments.push({
-                name: file.name,
-                size: file.size,
-                type: file.type,
-                data: fileData
-            });
-        }
-    }
-
-    projectData.timeline.push({
-        id: Date.now().toString(),
-        title: title,
-        description: description,
-        assignee: assignee || 'Unassigned',
-        dueDate: dueDate || null,
-        attachments: attachments,
-        comments: [],
-        completed: false,
-        createdAt: new Date().toISOString()
-    });
-
-    localStorage.setItem(`project_${currentProjectId}`, JSON.stringify(projectData));
-    displayTimelineItems(currentProjectId, projectData.timeline);
-    closeAddTaskModal();
-}
-
-function displayTimelineItems(projectId, items) {
-    const container = document.getElementById(`project-timeline-${projectId}`);
-    container.innerHTML = items.map(item => `
-        <div style="padding: 20px; background: white; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 16px;">
-            <div style="display: flex; align-items: start; gap: 16px;">
-                <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleTimelineItem('${projectId}', '${item.id}')" style="width: 20px; height: 20px; cursor: pointer; margin-top: 4px; flex-shrink: 0;">
-                <div style="flex: 1; cursor: pointer;" onclick="openTaskDetailsModal('${projectId}', '${item.id}')">
-                    <h4 style="margin: 0 0 8px 0; font-size: 16px; ${item.completed ? 'text-decoration: line-through; color: var(--text-secondary);' : 'color: var(--text-color);'}">${item.title || item.name}</h4>
-                    ${item.description ? `<div style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 14px;">${item.description}</div>` : ''}
-                    <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary);">
-                        ${item.assignee ? `<span><strong>Assigned:</strong> ${item.assignee}</span>` : ''}
-                        ${item.dueDate ? `<span><strong>Due:</strong> ${new Date(item.dueDate).toLocaleDateString()}</span>` : ''}
-                        ${item.attachments && item.attachments.length > 0 ? `<span>📎 ${item.attachments.length} file${item.attachments.length > 1 ? 's' : ''}</span>` : ''}
-                        ${item.comments && item.comments.length > 0 ? `<span>💬 ${item.comments.length} comment${item.comments.length > 1 ? 's' : ''}</span>` : ''}
-                    </div>
-                </div>
-                <div style="display: flex; gap: 8px; flex-shrink: 0;">
-                    <button onclick="event.stopPropagation(); openTaskDetailsModal('${projectId}', '${item.id}')" style="background: var(--primary-color); color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;">View Details</button>
-                    <button onclick="event.stopPropagation(); deleteTimelineItem('${projectId}', '${item.id}')" style="background: #ef4444; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;">Delete</button>
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
-
-function toggleTimelineItem(projectId, itemId) {
-    const projectData = JSON.parse(localStorage.getItem(`project_${projectId}`) || '{}');
-    const item = projectData.timeline.find(t => t.id === itemId);
-    if (item) {
-        item.completed = !item.completed;
-        localStorage.setItem(`project_${projectId}`, JSON.stringify(projectData));
-        displayTimelineItems(projectId, projectData.timeline);
-    }
-}
-
-function deleteTimelineItem(projectId, itemId) {
-    if (!confirm('Delete this task?')) return;
-    const projectData = JSON.parse(localStorage.getItem(`project_${projectId}`) || '{}');
-    projectData.timeline = projectData.timeline.filter(t => t.id !== itemId);
-    localStorage.setItem(`project_${projectId}`, JSON.stringify(projectData));
-    displayTimelineItems(projectId, projectData.timeline);
-}
-
-// Task Details Modal
-let currentTaskProjectId = null;
-let currentTaskId = null;
-
-function openTaskDetailsModal(projectId, taskId) {
-    currentTaskProjectId = projectId;
-    currentTaskId = taskId;
-
-    const projectData = JSON.parse(localStorage.getItem(`project_${projectId}`) || '{}');
-    const task = projectData.timeline.find(t => t.id === taskId);
-
-    if (!task) return;
-
-    // Set the title in the header
-    document.getElementById('task-details-title').textContent = task.title || task.name;
-
-    const content = document.getElementById('task-details-content');
-
-    content.innerHTML = `
-        <div style="margin-bottom: 30px;">
-            <h3 style="margin: 0 0 12px 0; font-size: 18px;">Description</h3>
-            <div style="padding: 20px; background: var(--background-alt); border-radius: 8px; color: var(--text-color); min-height: 60px;">
-                ${task.description || '<p style="color: var(--text-secondary); font-style: italic;">No description</p>'}
-            </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 40px;">
-            <div style="padding: 20px; background: var(--background-alt); border-radius: 8px;">
-                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 6px;">Assigned to</div>
-                <div style="font-weight: 600; font-size: 16px;">${task.assignee || 'Unassigned'}</div>
-            </div>
-            <div style="padding: 20px; background: var(--background-alt); border-radius: 8px;">
-                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 6px;">Due date</div>
-                <div style="font-weight: 600; font-size: 16px;">${task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'Not set'}</div>
-            </div>
-            <div style="padding: 20px; background: var(--background-alt); border-radius: 8px;">
-                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 6px;">Status</div>
-                <div style="font-weight: 600; font-size: 16px;">${task.completed ? '✅ Completed' : '⏳ In Progress'}</div>
-            </div>
-        </div>
-
-        <!-- Attachments Section -->
-        <div style="margin-bottom: 40px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <h3 style="margin: 0; font-size: 18px;">Attachments (${task.attachments ? task.attachments.length : 0})</h3>
-                <button class="btn-primary" onclick="uploadTaskFile('${projectId}', '${taskId}')">+ Upload File</button>
-            </div>
-            <div id="task-attachments-${taskId}" style="background: var(--background-alt); border-radius: 8px; padding: 20px; min-height: 100px;">
-                ${displayTaskAttachments(task.attachments || [])}
-            </div>
-        </div>
-
-        <!-- Comments Section -->
-        <div>
-            <h3 style="margin: 0 0 16px 0; font-size: 18px;">Comments (${task.comments ? task.comments.length : 0})</h3>
-            <div id="task-comments-${taskId}" style="margin-bottom: 20px; max-height: 400px; overflow-y: auto; background: var(--background-alt); border-radius: 8px; padding: 20px; min-height: 150px;">
-                ${displayTaskComments(task.comments || [])}
-            </div>
-            <div style="display: flex; gap: 12px;">
-                <input type="text" id="task-comment-input-${taskId}" placeholder="Add a comment..." style="flex: 1; padding: 14px 16px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 15px;">
-                <button class="btn-primary" onclick="addTaskComment('${projectId}', '${taskId}')" style="padding: 14px 24px;">Post Comment</button>
-            </div>
-        </div>
-    `;
-
-    document.getElementById('task-details-modal').style.display = 'block';
-}
-
-function closeTaskDetailsModal() {
-    document.getElementById('task-details-modal').style.display = 'none';
-    currentTaskProjectId = null;
-    currentTaskId = null;
-}
-
-function displayTaskAttachments(attachments) {
-    if (!attachments || attachments.length === 0) {
-        return '<p style="color: var(--text-secondary); font-style: italic; padding: 20px; text-align: center;">No files attached</p>';
-    }
-
-    return attachments.map((file, index) => `
-        <div style="padding: 16px; background: white; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">📎 ${file.name}</div>
-                <div style="font-size: 13px; color: var(--text-secondary);">${(file.size / 1024).toFixed(2)} KB</div>
-            </div>
-            <button onclick="deleteTaskFile('${currentTaskProjectId}', '${currentTaskId}', ${index})" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;">Delete</button>
-        </div>
-    `).join('');
-}
-
-function displayTaskComments(comments) {
-    if (!comments || comments.length === 0) {
-        return '<p style="color: var(--text-secondary); font-style: italic; padding: 20px; text-align: center;">No comments yet. Be the first to comment!</p>';
-    }
-
-    return comments.map(comment => `
-        <div style="padding: 20px; background: white; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-color);">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 40px; height: 40px; background: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 16px;">${comment.author.charAt(0)}</div>
-                    <strong style="color: var(--text-color); font-size: 15px;">${comment.author}</strong>
-                </div>
-                <span style="font-size: 12px; color: var(--text-secondary);">${new Date(comment.createdAt).toLocaleString()}</span>
-            </div>
-            <p style="margin: 0; color: var(--text-color); font-size: 14px; line-height: 1.6;">${comment.text}</p>
-        </div>
-    `).join('');
-}
-
-async function uploadTaskFile(projectId, taskId) {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = true;
-
-    input.onchange = async (e) => {
-        const files = e.target.files;
-        if (files.length === 0) return;
-
-        const projectData = JSON.parse(localStorage.getItem(`project_${projectId}`) || '{}');
-        const task = projectData.timeline.find(t => t.id === taskId);
-
-        if (!task) return;
-        if (!task.attachments) task.attachments = [];
-
-        for (let file of files) {
-            const fileData = await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.readAsDataURL(file);
-            });
-
-            task.attachments.push({
-                name: file.name,
-                size: file.size,
-                type: file.type,
-                data: fileData
-            });
-        }
-
-        localStorage.setItem(`project_${projectId}`, JSON.stringify(projectData));
-
-        // Refresh the modal
-        openTaskDetailsModal(projectId, taskId);
-        alert(`${files.length} file(s) uploaded successfully!`);
-    };
-
-    input.click();
-}
-
-function deleteTaskFile(projectId, taskId, fileIndex) {
-    if (!confirm('Delete this file?')) return;
-
-    const projectData = JSON.parse(localStorage.getItem(`project_${projectId}`) || '{}');
-    const task = projectData.timeline.find(t => t.id === taskId);
-
-    if (!task) return;
-
-    task.attachments.splice(fileIndex, 1);
-    localStorage.setItem(`project_${projectId}`, JSON.stringify(projectData));
-
-    // Refresh the modal and task list
-    openTaskDetailsModal(projectId, taskId);
-    displayTimelineItems(projectId, projectData.timeline);
-}
-
-function addTaskComment(projectId, taskId) {
-    const input = document.getElementById(`task-comment-input-${taskId}`);
-    const commentText = input.value.trim();
-
-    if (!commentText) return;
-
-    const projectData = JSON.parse(localStorage.getItem(`project_${projectId}`) || '{}');
-    const task = projectData.timeline.find(t => t.id === taskId);
-
-    if (!task) return;
-    if (!task.comments) task.comments = [];
-
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-
-    task.comments.push({
-        id: Date.now().toString(),
-        text: commentText,
-        author: user.name || 'User',
-        createdAt: new Date().toISOString()
-    });
-
-    localStorage.setItem(`project_${projectId}`, JSON.stringify(projectData));
-
-    // Refresh comments display
-    const commentsContainer = document.getElementById(`task-comments-${taskId}`);
-    commentsContainer.innerHTML = displayTaskComments(task.comments);
-
-    // Update comment count in header
-    const modal = document.getElementById('task-details-modal');
-    const h3 = modal.querySelector('h3:last-of-type');
-    if (h3) h3.textContent = `Comments (${task.comments.length})`;
-
-    // Clear input and update task list
-    input.value = '';
-    displayTimelineItems(projectId, projectData.timeline);
-}
-
-function sendChatMessage(projectId) {
-    const input = document.getElementById(`chat-input-${projectId}`);
-    const messageText = input.value.trim();
-    if (!messageText) return;
-
-    const projectData = JSON.parse(localStorage.getItem(`project_${projectId}`) || '{}');
-    if (!projectData.chat) projectData.chat = [];
-
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    projectData.chat.push({
-        id: Date.now().toString(),
-        text: messageText,
-        author: user.name || 'User',
-        createdAt: new Date().toISOString()
-    });
-
-    localStorage.setItem(`project_${projectId}`, JSON.stringify(projectData));
-    input.value = '';
-    displayChatMessages(projectId, projectData.chat);
-}
-
-function displayChatMessages(projectId, messages) {
-    const container = document.getElementById(`project-chat-${projectId}`);
-    container.innerHTML = messages.map(message => `
-        <div style="padding: 16px; background: var(--background-alt); border-radius: 8px; margin-bottom: 12px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                <strong style="color: var(--primary-color); font-size: 14px;">${message.author}</strong>
-                <span style="font-size: 12px; color: var(--text-secondary);">${new Date(message.createdAt).toLocaleString()}</span>
-            </div>
-            <p style="margin: 0; color: var(--text-color); font-size: 14px;">${message.text}</p>
-        </div>
-    `).join('');
-
-    // Scroll to bottom
-    container.scrollTop = container.scrollHeight;
-}
-
-// Archive project function
-function archiveProject(projectId) {
-    if (!confirm('Archive this project?')) return;
-
-    const projectIndex = projects.findIndex(p => p.id === projectId);
-    if (projectIndex === -1) return;
-
-    projects[projectIndex].archived = true;
-    localStorage.setItem('projects', JSON.stringify(projects));
-
-    alert('Project archived successfully!');
-    loadProjects();
-}
-
-// Team Member Management in Project Board
-let currentTeamProjectId = null;
-
-function openAddTeamMemberModal(projectId) {
-    currentTeamProjectId = projectId;
-    document.getElementById('add-team-member-modal').style.display = 'block';
-
-    // Clear form
-    document.getElementById('new-member-firstname').value = '';
-    document.getElementById('new-member-lastname').value = '';
-    document.getElementById('new-member-title').value = '';
-    document.getElementById('new-member-email').value = '';
-}
-
-function closeAddTeamMemberModal() {
-    document.getElementById('add-team-member-modal').style.display = 'none';
-    currentTeamProjectId = null;
-}
-
-function addProjectTeamMember() {
-    const firstName = document.getElementById('new-member-firstname').value.trim();
-    const lastName = document.getElementById('new-member-lastname').value.trim();
-    const title = document.getElementById('new-member-title').value.trim();
-    const email = document.getElementById('new-member-email').value.trim();
-
-    if (!firstName || !lastName || !email) {
-        alert('Please fill in all required fields (First Name, Last Name, Email)');
-        return;
-    }
-
-    if (!email.includes('@')) {
-        alert('Please enter a valid email address');
-        return;
-    }
-
-    // Find the project
-    const projectIndex = projects.findIndex(p => p.id === currentTeamProjectId);
-    if (projectIndex === -1) return;
-
-    // Add team member to project
-    if (!projects[projectIndex].teamMembers) {
-        projects[projectIndex].teamMembers = [];
-    }
-
-    projects[projectIndex].teamMembers.push({
-        firstName,
-        lastName,
-        title: title || 'Team Member',
-        email
-    });
-
-    // Save to localStorage
-    localStorage.setItem('projects', JSON.stringify(projects));
-
-    // Send email invite (simulated)
-    alert(`Invitation email sent to ${email}!\n\n${firstName} ${lastName} has been added to the project.`);
-
-    // Refresh the team members list in the modal
-    refreshProjectTeamMembersList(currentTeamProjectId);
-
-    closeAddTeamMemberModal();
-}
-
-function removeProjectTeamMember(projectId, memberIndex) {
-    if (!confirm('Remove this team member from the project?')) return;
-
-    const projectIndex = projects.findIndex(p => p.id === projectId);
-    if (projectIndex === -1) return;
-
-    const removedMember = projects[projectIndex].teamMembers[memberIndex];
-    projects[projectIndex].teamMembers.splice(memberIndex, 1);
-
-    localStorage.setItem('projects', JSON.stringify(projects));
-
-    alert(`${removedMember.firstName} ${removedMember.lastName} has been removed from the project.`);
-
-    // Refresh the team members list
-    refreshProjectTeamMembersList(projectId);
-}
-
-function refreshProjectTeamMembersList(projectId) {
-    const project = projects.find(p => p.id === projectId);
-    if (!project) return;
-
-    const container = document.getElementById(`team-members-list-${projectId}`);
-    if (!container) return;
-
-    if (!project.teamMembers || project.teamMembers.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">No team members assigned.</p>';
-    } else {
-        container.innerHTML = project.teamMembers.map((member, index) => `
-            <div style="display: flex; align-items: center; gap: 16px; padding: 16px; border-bottom: 1px solid var(--border-color);">
-                <div style="width: 50px; height: 50px; background: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px;">${member.firstName.charAt(0)}${member.lastName.charAt(0)}</div>
-                <div style="flex: 1;">
-                    <div style="font-weight: 600; font-size: 16px;">${member.firstName} ${member.lastName}</div>
-                    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">${member.title || 'Team Member'}</div>
-                    <div style="font-size: 14px; color: var(--text-secondary); margin-top: 4px;">${member.email}</div>
-                </div>
-                <button onclick="removeProjectTeamMember('${projectId}', ${index})" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;">Remove</button>
-            </div>
-        `).join('');
-    }
-}
-
-function uploadProjectDocument(projectId) {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = true;
-    input.accept = '.pdf,.docx,.doc,.txt,.xlsx,.xls';
-
-    input.onchange = async (e) => {
-        const files = e.target.files;
-        if (files.length === 0) return;
-
-        const projectData = JSON.parse(localStorage.getItem(`project_${projectId}`) || '{}');
-        if (!projectData.documents) projectData.documents = [];
-
-        for (let file of files) {
-            projectData.documents.push({
-                id: Date.now().toString(),
-                name: file.name,
-                size: file.size,
-                uploadedAt: new Date().toISOString()
-            });
-        }
-
-        localStorage.setItem(`project_${projectId}`, JSON.stringify(projectData));
-        displayProjectDocuments(projectId, projectData.documents);
-        alert(`${files.length} document(s) uploaded successfully!`);
-    };
-
-    input.click();
-}
-
-function displayProjectDocuments(projectId, documents) {
-    const container = document.getElementById(`project-documents-${projectId}`);
-
-    if (documents.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">No documents uploaded.</p>';
-        return;
-    }
-
-    container.innerHTML = documents.map(doc => `
-        <div style="padding: 16px; background: var(--background-alt); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
-            <div style="flex: 1;">
-                <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">📄 ${doc.name}</div>
-                <div style="font-size: 12px; color: var(--text-secondary);">
-                    ${(doc.size / 1024).toFixed(2)} KB • Uploaded ${new Date(doc.uploadedAt).toLocaleDateString()}
-                </div>
-            </div>
-            <div style="display: flex; gap: 8px;">
-                <button onclick="renameDocument('${projectId}', '${doc.id}')" style="background: var(--primary-color); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;">Rename</button>
-                <button onclick="deleteDocument('${projectId}', '${doc.id}')" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;">Delete</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-function renameDocument(projectId, docId) {
-    const projectData = JSON.parse(localStorage.getItem(`project_${projectId}`) || '{}');
-    const doc = projectData.documents.find(d => d.id === docId);
-
-    if (!doc) return;
-
-    const newName = prompt('Enter new document name:', doc.name);
-    if (!newName || newName.trim() === '') return;
-
-    doc.name = newName.trim();
-    localStorage.setItem(`project_${projectId}`, JSON.stringify(projectData));
-    displayProjectDocuments(projectId, projectData.documents);
-}
-
-function deleteDocument(projectId, docId) {
-    if (!confirm('Are you sure you want to delete this document?')) return;
-
-    const projectData = JSON.parse(localStorage.getItem(`project_${projectId}`) || '{}');
-    projectData.documents = projectData.documents.filter(d => d.id !== docId);
-
-    localStorage.setItem(`project_${projectId}`, JSON.stringify(projectData));
-    displayProjectDocuments(projectId, projectData.documents);
-
-    alert('Document deleted successfully!');
+    loadMeetingsHistory();
 }
 
 let meetingDocuments = [];
@@ -3876,7 +2335,8 @@ async function uploadMeetingDocuments() {
             size: file.size,
             type: file.type,
             data: fileData,
-            uploadedAt: new Date().toISOString()
+            uploadedAt: new Date().toISOString(),
+            category: 'Uncategorized'
         });
     }
 
@@ -3886,6 +2346,9 @@ async function uploadMeetingDocuments() {
     alert(`${files.length} document(s) uploaded successfully!`);
     closeMeetingDocUploadModal();
     loadMeetingDocuments();
+
+    // Refresh Agent tab if documents were just added
+    loadDashboardHighlights();
 }
 
 function loadMeetingDocuments() {
@@ -3934,13 +2397,28 @@ function displayMeetingDocuments(docs) {
             const fileIcon = fileExt === 'pdf' ? '📕' :
                            fileExt === 'docx' || fileExt === 'doc' ? '📘' :
                            fileExt === 'txt' ? '📄' : '📗';
+            const category = doc.category || 'Uncategorized';
 
             return `
-            <div style="background: white; border: 2px solid var(--border-color); border-radius: 12px; padding: 20px; transition: all 0.3s ease; cursor: pointer;" onmouseover="this.style.borderColor='var(--primary-color)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform='translateY(0)';">
+            <div style="background: white; border: 2px solid var(--border-color); border-radius: 12px; padding: 20px; transition: all 0.3s ease;">
                 <div style="display: flex; align-items: start; gap: 16px; margin-bottom: 16px;">
                     <div style="font-size: 40px;">${fileIcon}</div>
                     <div style="flex: 1; min-width: 0;">
-                        <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${doc.name}</h4>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <input type="text" id="doc-name-${doc.id}" value="${doc.name}"
+                                onblur="updateDocumentName('${doc.id}', this.value)"
+                                style="flex: 1; font-size: 16px; font-weight: 600; border: 1px solid transparent; padding: 4px 8px; border-radius: 4px; background: transparent;"
+                                onfocus="this.style.borderColor='var(--primary-color)'; this.style.background='#f9fafb';"
+                                onblur="this.style.borderColor='transparent'; this.style.background='transparent';">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <span style="font-size: 12px; color: var(--text-secondary);">Category:</span>
+                            <input type="text" id="doc-category-${doc.id}" value="${category}"
+                                onblur="updateDocumentCategory('${doc.id}', this.value)"
+                                style="flex: 1; font-size: 13px; border: 1px solid transparent; padding: 4px 8px; border-radius: 4px; background: transparent; color: var(--primary-color); font-weight: 500;"
+                                onfocus="this.style.borderColor='var(--primary-color)'; this.style.background='#f9fafb';"
+                                onblur="this.style.borderColor='transparent'; this.style.background='transparent';">
+                        </div>
                         <div style="display: flex; gap: 16px; font-size: 13px; color: var(--text-secondary);">
                             <span>${(doc.size / 1024).toFixed(2)} KB</span>
                             <span>${fileExt.toUpperCase()}</span>
@@ -3972,6 +2450,28 @@ function filterKnowledgeLibrary() {
     displayMeetingDocuments(filteredDocs);
 }
 
+function updateDocumentName(docId, newName) {
+    if (!newName || newName.trim() === '') {
+        alert('Document name cannot be empty');
+        loadMeetingDocuments();
+        return;
+    }
+
+    const doc = meetingDocuments.find(d => d.id === docId);
+    if (doc) {
+        doc.name = newName.trim();
+        localStorage.setItem('meetingDocuments', JSON.stringify(meetingDocuments));
+    }
+}
+
+function updateDocumentCategory(docId, newCategory) {
+    const doc = meetingDocuments.find(d => d.id === docId);
+    if (doc) {
+        doc.category = newCategory.trim() || 'Uncategorized';
+        localStorage.setItem('meetingDocuments', JSON.stringify(meetingDocuments));
+    }
+}
+
 function deleteMeetingDocument(docId) {
     if (!confirm('Are you sure you want to remove this document?')) {
         return;
@@ -3980,6 +2480,103 @@ function deleteMeetingDocument(docId) {
     meetingDocuments = meetingDocuments.filter(doc => doc.id !== docId);
     localStorage.setItem('meetingDocuments', JSON.stringify(meetingDocuments));
     loadMeetingDocuments();
+
+    // Refresh Agent tab to update document count
+    loadDashboardHighlights();
+}
+
+// Meetings History Functions
+function loadMeetingsHistory() {
+    const storedMeetings = localStorage.getItem('meetingsHistory');
+    const meetings = storedMeetings ? JSON.parse(storedMeetings) : [];
+
+    const emptyState = document.getElementById('meetings-empty-state');
+    const meetingsList = document.getElementById('meetings-list');
+
+    if (meetings.length === 0) {
+        emptyState.style.display = 'block';
+        meetingsList.style.display = 'none';
+        return;
+    }
+
+    emptyState.style.display = 'none';
+    meetingsList.style.display = 'block';
+
+    // Sort meetings by date (newest first)
+    meetings.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    meetingsList.innerHTML = meetings.map(meeting => {
+        const date = new Date(meeting.date);
+        const formattedDate = date.toLocaleDateString('en-US', {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+        const formattedTime = date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        // Calculate duration in minutes
+        const durationMinutes = Math.floor(meeting.duration / 60);
+        const durationSeconds = meeting.duration % 60;
+        const durationText = `${durationMinutes}m ${durationSeconds}s`;
+
+        // Unanswered questions section
+        const unansweredSection = meeting.unansweredQuestions && meeting.unansweredQuestions.length > 0 ? `
+            <div style="margin-top: 16px; padding: 16px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 8px;">
+                <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #856404; display: flex; align-items: center; gap: 8px;">
+                    <span>⚠️</span>
+                    Unanswered Questions (${meeting.unansweredQuestions.length})
+                </h4>
+                <ul style="margin: 0; padding-left: 20px; color: #856404;">
+                    ${meeting.unansweredQuestions.map(q => `<li style="margin-bottom: 8px;">${q}</li>`).join('')}
+                </ul>
+                <p style="margin: 12px 0 0 0; font-size: 13px; color: #856404;">
+                    💡 Upload relevant documents to help Answerly answer these questions in future meetings.
+                </p>
+            </div>
+        ` : '';
+
+        return `
+            <div style="border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; margin-bottom: 20px; background: white;">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+                    <div>
+                        <h3 style="margin: 0 0 8px 0; font-size: 18px; color: var(--text-primary);">${meeting.title || 'Meeting'}</h3>
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+                            📅 ${formattedDate} at ${formattedTime}
+                        </p>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%); color: white; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;">
+                            ⏱️ ${durationText}
+                        </div>
+                        <p style="margin: 8px 0 0 0; font-size: 12px; color: var(--text-secondary);">
+                            Answerly Active
+                        </p>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px;">
+                    <div style="text-align: center; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: bold; color: var(--primary-color);">${meeting.questionsAnswered || 0}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Questions Answered</div>
+                    </div>
+                    <div style="text-align: center; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #10b981;">${meeting.documentsReferenced || 0}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Documents Referenced</div>
+                    </div>
+                    <div style="text-align: center; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #f59e0b;">${meeting.unansweredQuestions ? meeting.unansweredQuestions.length : 0}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Unanswered</div>
+                    </div>
+                </div>
+
+                ${unansweredSection}
+            </div>
+        `;
+    }).join('');
 }
 
 // Answerly Popup Functions
@@ -4000,6 +2597,14 @@ function closeAnswerlyPopup() {
     const popup = document.getElementById('answerly-listening-popup');
     popup.style.display = 'none';
 
+    // Calculate meeting duration
+    const duration = answerlyStartTime ? Math.floor((Date.now() - answerlyStartTime) / 1000) : 0;
+
+    // Save meeting history if the agent was listening (duration > 0)
+    if (duration > 0) {
+        saveMeetingHistory(duration);
+    }
+
     // Stop the timer
     if (answerlyTimerInterval) {
         clearInterval(answerlyTimerInterval);
@@ -4009,8 +2614,56 @@ function closeAnswerlyPopup() {
     // Reset timer display
     document.getElementById('answerly-timer').textContent = '00:00';
 
+    // Reset meeting data
+    answerlyStartTime = null;
+    meetingQuestions = [];
+
     // Stop listening
     stopAnswerlyListening();
+}
+
+function saveMeetingHistory(duration) {
+    // Get existing meetings history
+    const storedMeetings = localStorage.getItem('meetingsHistory');
+    const meetings = storedMeetings ? JSON.parse(storedMeetings) : [];
+
+    // Count answered and unanswered questions
+    const answeredQuestions = meetingQuestions.filter(q => q.answered);
+    const unansweredQuestions = meetingQuestions.filter(q => !q.answered).map(q => q.question);
+
+    // Get documents referenced (from answered questions)
+    const documentsReferenced = new Set();
+    answeredQuestions.forEach(q => {
+        const docMatch = q.answer.match(/Based on "([^"]+)"/);
+        if (docMatch) {
+            documentsReferenced.add(docMatch[1]);
+        }
+    });
+
+    // Format date and time for title
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+    // Create meeting record
+    const meeting = {
+        id: Date.now(),
+        title: `Meeting Session - ${dateStr} at ${timeStr}`,
+        date: now.toISOString(),
+        duration: duration,
+        questionsAnswered: answeredQuestions.length,
+        totalQuestions: meetingQuestions.length,
+        documentsReferenced: documentsReferenced.size,
+        unansweredQuestions: unansweredQuestions
+    };
+
+    // Add to meetings history
+    meetings.push(meeting);
+
+    // Save to localStorage
+    localStorage.setItem('meetingsHistory', JSON.stringify(meetings));
+
+    console.log('Meeting history saved:', meeting);
 }
 
 function updateAnswerlyTimer() {
@@ -4052,17 +2705,44 @@ function startAnswerlyListening() {
 
         recognition.onresult = (event) => {
             let transcript = '';
+            let isFinal = false;
+
             for (let i = event.resultIndex; i < event.results.length; i++) {
                 transcript += event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    isFinal = true;
+                }
             }
 
             // Update conversation display
             const conversationDiv = document.getElementById('answerly-popup-conversation');
-            conversationDiv.innerHTML = `<p>${transcript}</p>`;
+            if (conversationDiv) {
+                conversationDiv.innerHTML = `<p>${transcript}</p>`;
+            }
 
-            // Detect questions and search for answers
-            if (transcript.includes('?') || /\b(how|what|when|where|why|who)\b/i.test(transcript)) {
-                searchAnswerlyDocuments(transcript);
+            console.log('Speech recognized:', transcript, 'Final:', isFinal);
+
+            // Only process final results to avoid duplicates
+            if (isFinal) {
+                // Detect questions and search for answers
+                const hasQuestionMark = transcript.includes('?');
+                const hasQuestionWord = /\b(how|what|when|where|why|who|can|could|would|should|will|is|are|does|do|did)\b/i.test(transcript);
+
+                console.log('Question detected:', hasQuestionMark || hasQuestionWord);
+
+                if ((hasQuestionMark || hasQuestionWord) && transcript.trim().length > 10) {
+                    // Extract the actual question (split on periods if there are multiple sentences)
+                    const sentences = transcript.split(/\.\s+/);
+                    for (const sentence of sentences) {
+                        if (sentence.includes('?') || /\b(how|what|when|where|why|who|can|could|would|should|will|is|are|does|do|did)\b/i.test(sentence)) {
+                            const question = sentence.trim();
+                            if (question.length > 10) {
+                                console.log('Processing question:', question);
+                                searchAnswerlyDocuments(question);
+                            }
+                        }
+                    }
+                }
             }
         };
 
@@ -4086,18 +2766,48 @@ function stopAnswerlyListening() {
     }
 }
 
-function searchAnswerlyDocuments(question) {
-    // Load meeting documents and search for relevant content
-    const storedDocs = localStorage.getItem('meetingDocuments');
-    if (!storedDocs) {
-        displayAnswerlyResponse(question, 'No documents available to search.');
+// Track recently answered questions to avoid duplicates
+let recentlyAnsweredQuestions = [];
+
+async function searchAnswerlyDocuments(question) {
+    console.log('Searching for answer to:', question);
+
+    // Check if we already answered this question recently (within last 10 seconds)
+    const questionLower = question.toLowerCase().trim();
+    const now = Date.now();
+    recentlyAnsweredQuestions = recentlyAnsweredQuestions.filter(q => now - q.timestamp < 10000);
+
+    if (recentlyAnsweredQuestions.some(q => q.question === questionLower)) {
+        console.log('Question already answered recently, skipping');
         return;
     }
 
-    const docs = JSON.parse(storedDocs);
-    // Simulate document search (in real implementation, this would search document content)
-    const answer = `Searching ${docs.length} document(s) for: "${question}"`;
-    displayAnswerlyResponse(question, answer);
+    // Mark this question as being processed
+    recentlyAnsweredQuestions.push({ question: questionLower, timestamp: now });
+
+    // Show "searching" message first
+    displayAnswerlyResponse(question, '💭 Searching documents...');
+
+    // Get answer from knowledge base using the existing function
+    try {
+        const answer = await simulateAIAnswer(question);
+        const answered = !answer.includes('couldn\'t find') && !answer.includes('error') && !answer.includes('I searched through');
+
+        // Update with actual answer
+        displayAnswerlyResponse(question, answer);
+
+        // Track question for meeting history
+        meetingQuestions.push({
+            question,
+            answered,
+            answer
+        });
+
+        console.log('Answer found:', answered, answer.substring(0, 100));
+    } catch (error) {
+        console.error('Error searching documents:', error);
+        displayAnswerlyResponse(question, 'Error searching documents. Please try again.');
+    }
 }
 
 function displayAnswerlyResponse(question, answer) {
