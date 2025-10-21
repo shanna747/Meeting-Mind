@@ -3,23 +3,1062 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Answerly.ai</title>
+    <title>Answerly.ai - From Question to Resolved Answer</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <header>
-        <h1>Answerly.ai</h1>
-    </header>
+    <!-- Landing Page -->
+    <div id="landing-page" class="page active">
+        <header class="landing-header">
+            <nav class="navbar">
+                <div class="logo">
+                    <img src="logo.svg" alt="Answerly.ai Logo" width="40" height="40" style="vertical-align: middle; margin-right: 12px;">
+                    <h1 style="display: inline-block; margin: 0;">Answerly.ai</h1>
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn-secondary" onclick="showLogin()">Login</button>
+                    <button class="btn-primary" onclick="showRegister()">Get Started</button>
+                </div>
+            </nav>
+        </header>
 
-    <main>
-        <section>
-            <h2>Welcome to Answerly.ai</h2>
-            <p>From question to resolved answer</p>
-        </section>
-    </main>
+        <main class="landing-main">
+            <!-- Hero Section -->
+            <section class="hero">
+                <div class="hero-badge">✨ AI-Powered Knowledge Assistant</div>
+                <h2 class="hero-title"><strong>Get Real-Time <span class="gradient-text">Answers</span><br>During Every Meeting</strong></h2>
+                <p class="hero-subtitle">Answerly AI listens in real time meetings and pulls answers directly from your product docs, so you can focus on winning the conversation.</p>
+                <div class="hero-cta">
+                    <button class="btn-cta" onclick="showRegister()">Try It Free</button>
+                    <button class="btn-secondary btn-lg" onclick="showHowItWorks()">See How It Works</button>
+                </div>
+                <div class="hero-proof">
+                    <span class="proof-item">✓ No credit card required</span>
+                    <span class="proof-item">✓ 5-minute setup</span>
+                    <span class="proof-item">✓ Works with your tools</span>
+                </div>
+            </section>
 
-    <footer>
-        <p>&copy; 2025 Answerly.ai</p>
-    </footer>
+            <!-- Features Section -->
+            <section class="features">
+                <div class="section-header-center">
+                    <h2 class="section-title">Confidence & Credibility in Every Meeting</h2>
+                    <p class="section-description">Turn your company knowledge into instant, actionable answers</p>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <div class="feature-icon gradient-purple">💼</div>
+                        </div>
+                        <h3>Product Knowledge Companion</h3>
+                        <p>By surfacing the right information at the right time, the tool helps you handle tough client questions with authority, building trust and strengthening relationships.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <div class="feature-icon gradient-green">✓</div>
+                        </div>
+                        <h3>Get Answers Instantly</h3>
+                        <p>Receive precise, sourced answers in seconds. No more "I'll get back to you" or scrambling through docs mid-call.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <div class="feature-icon gradient-blue">🧠</div>
+                        </div>
+                        <h3>Your Product Brain</h3>
+                        <p>Upload docs, connect integrations, and build a knowledge base that learns and grows with your team.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CTA Section -->
+            <section class="cta-section">
+                <div class="cta-content">
+                    <h2 class="cta-title">Ready to answer smarter?</h2>
+                    <p class="cta-description">Join teams who've transformed how they handle questions</p>
+                    <button class="btn-cta" onclick="showRegister()">Start Your Free Trial</button>
+                </div>
+            </section>
+        </main>
+
+        <footer class="landing-footer">
+            <p>&copy; 2025 Answerly.ai. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Login Page -->
+    <div id="login-page" class="page">
+        <div class="auth-container">
+            <div class="auth-brand-container">
+                <img src="logo.svg" alt="Answerly.ai Logo" width="80" height="80" class="auth-logo">
+                <h1 class="auth-brand">Answerly.ai</h1>
+            </div>
+            <div class="auth-box">
+                <h2>Welcome Back</h2>
+
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" required placeholder="you@company.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn-primary btn-full">Log In</button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Don't have an account? <a href="#" onclick="showRegister()">Sign up</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Page -->
+    <div id="register-page" class="page">
+        <div class="auth-container">
+            <div class="auth-brand-container">
+                <img src="logo.svg" alt="Answerly.ai Logo" width="80" height="80" class="auth-logo">
+                <h1 class="auth-brand">Answerly.ai</h1>
+            </div>
+            <div class="auth-box">
+                <h2>Create Your Account</h2>
+                <p class="auth-subtitle">Choose your subscription plan</p>
+
+                <form id="register-form" onsubmit="handleRegister(event)">
+                    <!-- Subscription Plans -->
+                    <div class="subscription-plans">
+                        <div class="plan-card" onclick="selectPlan('free')">
+                            <div class="plan-header">
+                                <h3>Basic</h3>
+                                <div class="plan-price">
+                                    <span class="price">FREE</span>
+                                </div>
+                            </div>
+                            <ul class="plan-features">
+                                <li>✓ 15 minutes per meeting</li>
+                                <li>✓ Basic transcription</li>
+                                <li>✓ Product knowledge hub</li>
+                                <li>✓ Support Docs</li>
+                            </ul>
+                            <input type="radio" name="subscription" value="free" id="plan-free" checked>
+                        </div>
+
+                        <div class="plan-card" onclick="selectPlan('pro')">
+                            <div class="plan-badge">Popular</div>
+                            <div class="plan-header">
+                                <h3>Pro</h3>
+                                <div class="plan-price">
+                                    <span class="price">$11</span>
+                                    <span class="period">/month</span>
+                                </div>
+                            </div>
+                            <ul class="plan-features">
+                                <li>✓ 30 minutes per meeting</li>
+                                <li>✓ Advanced transcription</li>
+                                <li>✓ Product knowledge hub</li>
+                                <li>✓ Support Docs</li>
+                            </ul>
+                            <input type="radio" name="subscription" value="pro" id="plan-pro">
+                        </div>
+
+                        <div class="plan-card" onclick="selectPlan('business')">
+                            <div class="plan-header">
+                                <h3>Business</h3>
+                                <div class="plan-price">
+                                    <span class="price">$24</span>
+                                    <span class="period">/month</span>
+                                </div>
+                            </div>
+                            <ul class="plan-features">
+                                <li>✓ 60 minutes per meeting</li>
+                                <li>✓ Premium transcription</li>
+                                <li>✓ Product knowledge hub</li>
+                                <li>✓ Support Docs</li>
+                                <li>✓ Custom features</li>
+                            </ul>
+                            <input type="radio" name="subscription" value="business" id="plan-business">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-name">Full Name</label>
+                        <input type="text" id="register-name" required placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" required placeholder="you@company.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" required placeholder="••••••••" minlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-company">Company Name (Optional)</label>
+                        <input type="text" id="register-company" placeholder="Acme Inc.">
+                    </div>
+                    <button type="submit" class="btn-primary btn-full">Create Account</button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Already have an account? <a href="#" onclick="showLogin()">Log in</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How It Works Page -->
+    <div id="how-it-works-page" class="page">
+        <header class="landing-header">
+            <nav class="navbar">
+                <div class="logo">
+                    <img src="logo.svg" alt="Answerly.ai Logo" width="40" height="40" style="vertical-align: middle; margin-right: 12px;">
+                    <h1 style="display: inline-block; margin: 0;">Answerly.ai</h1>
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn-secondary" onclick="showLogin()">Login</button>
+                    <button class="btn-primary" onclick="showRegister()">Get Started</button>
+                </div>
+            </nav>
+        </header>
+
+        <main class="landing-main">
+            <!-- How It Works Hero -->
+            <section class="hero">
+                <div class="hero-badge">🎯 See Answerly in Action</div>
+                <h2 class="hero-title"><strong>How <span class="gradient-text">Answerly.ai</span><br>Works For You</strong></h2>
+                <p class="hero-subtitle">Transform your meetings with real-time AI-powered answers from your company knowledge base</p>
+            </section>
+
+            <!-- How It Works Steps -->
+            <section class="features" style="padding-top: 0;">
+                <div class="section-header-center">
+                    <h2 class="section-title">Three Simple Steps to Smarter Meetings</h2>
+                    <p class="section-description">Get up and running in minutes, no technical expertise required</p>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <div class="feature-icon gradient-purple">1️⃣</div>
+                        </div>
+                        <h3>Connect Your Knowledge</h3>
+                        <p>Upload your product docs, wikis, help articles, and any company resources. Answerly securely stores and indexes everything for instant retrieval.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <div class="feature-icon gradient-blue">2️⃣</div>
+                        </div>
+                        <h3>Join Your Meeting</h3>
+                        <p>Works seamlessly with Zoom, Google Meet, Microsoft Teams, and more. Just activate Answerly when your meeting starts.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <div class="feature-icon gradient-green">3️⃣</div>
+                        </div>
+                        <h3>Get Instant Answers</h3>
+                        <p>Answerly listens to your conversation and instantly surfaces relevant information from your knowledge base - no more "I'll get back to you."</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Use Cases -->
+            <section class="features" style="background-color: var(--background-alt);">
+                <div class="section-header-center">
+                    <h2 class="section-title">Perfect For Every Role</h2>
+                    <p class="section-description">Sales, support, success - anyone who needs instant answers</p>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <div class="feature-icon gradient-teal">💼</div>
+                        </div>
+                        <h3>Sales Teams</h3>
+                        <p>Close deals faster by answering technical questions on the spot. No more losing momentum waiting for product team responses.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <div class="feature-icon gradient-purple">🎧</div>
+                        </div>
+                        <h3>Customer Support</h3>
+                        <p>Resolve issues in real-time with accurate information pulled directly from your knowledge base and documentation.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <div class="feature-icon gradient-green">🚀</div>
+                        </div>
+                        <h3>Customer Success</h3>
+                        <p>Deliver exceptional onboarding and training sessions with all the answers at your fingertips.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Benefits Section -->
+            <section class="features">
+                <div class="section-header-center">
+                    <h2 class="section-title">Why Teams Love Answerly</h2>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <div class="feature-icon gradient-blue">⚡</div>
+                        </div>
+                        <h3>Save Time</h3>
+                        <p>No more scrambling through docs or putting clients on hold. Get answers instantly during live conversations.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <div class="feature-icon gradient-green">✓</div>
+                        </div>
+                        <h3>Build Trust</h3>
+                        <p>Respond confidently with accurate, sourced information. Show clients you know your product inside and out.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <div class="feature-icon gradient-purple">🎯</div>
+                        </div>
+                        <h3>Close More Deals</h3>
+                        <p>Handle objections in real-time, answer tough questions, and keep the conversation moving forward.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CTA Section -->
+            <section class="cta-section">
+                <div class="cta-content">
+                    <h2 class="cta-title">Ready to transform your meetings?</h2>
+                    <p class="cta-description">Join teams already using Answerly to win more conversations</p>
+                    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 32px;">
+                        <button class="btn-cta" onclick="showRegister()">Try It Free</button>
+                        <button class="btn-cta" onclick="showRegister()" style="background: white; color: var(--primary-color);">Get Started</button>
+                    </div>
+                    <p style="margin-top: 24px; font-size: 14px; opacity: 0.9;">No credit card required • 5-minute setup • Cancel anytime</p>
+                </div>
+            </section>
+        </main>
+
+        <footer class="landing-footer">
+            <p>&copy; 2025 Answerly.ai. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Dashboard Page -->
+    <div id="dashboard-page" class="page">
+        <header class="dashboard-header">
+            <div class="dashboard-nav">
+                <div class="logo">
+                    <img src="logo.svg" alt="Answerly.ai Logo" width="32" height="32" style="vertical-align: middle; margin-right: 10px;">
+                    <h2 style="display: inline-block; margin: 0;">Answerly.ai</h2>
+                </div>
+                <nav class="main-nav">
+                </nav>
+                <div class="user-menu">
+                    <div class="user-dropdown">
+                        <button class="user-profile-btn">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" style="margin-right: 8px;">
+                                <path d="M10 10a4 4 0 100-8 4 4 0 000 8zm0 2c-4.42 0-8 1.79-8 4v2h16v-2c0-2.21-3.58-4-8-4z"/>
+                            </svg>
+                            <span id="user-name">User</span>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-left: 8px;">
+                                <path d="M4 6l4 4 4-4H4z"/>
+                            </svg>
+                        </button>
+                        <div class="dropdown-menu">
+                            <button class="dropdown-item" onclick="handleLogout()">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 8px;">
+                                    <path d="M3 3h6v2H3v8h6v2H3c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2zm9 4l3 3-3 3v-2H7V8h5V6z"/>
+                                </svg>
+                                Log out
+                            </button>
+                            <button class="dropdown-item" onclick="showUserProfile()">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 8px;">
+                                    <path d="M13.5 2h-11C1.7 2 1 2.7 1 3.5v9c0 .8.7 1.5 1.5 1.5h11c.8 0 1.5-.7 1.5-1.5v-9c0-.8-.7-1.5-1.5-1.5zM5 6.5c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5S7.3 8 6.5 8 5 7.3 5 6.5zM9 11H4v-.5C4 9.7 4.7 9 5.5 9h2c.8 0 1.5.7 1.5 1.5V11zm4-1h-2V9h2v1zm0-2h-2V7h2v1z"/>
+                                </svg>
+                                Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="secondary-nav">
+                <button class="nav-link active" onclick="showDashboardHome()">Agent</button>
+                <button class="nav-link" onclick="showDocuments()">Documents</button>
+                <button class="nav-link" onclick="showMeetings()">Meetings</button>
+            </div>
+        </header>
+
+        <main class="dashboard-main">
+            <!-- Dashboard Home View -->
+            <div id="dashboard-home-view" class="dashboard-view active">
+                <div class="dashboard-container">
+                    <!-- Empty State: No Documents -->
+                    <div id="agent-empty-state" style="display: none; text-align: center; padding: 80px 20px;">
+                        <div style="margin-bottom: 24px;">
+                            <img src="logo.svg" alt="Answerly.ai Logo" width="120" height="120">
+                        </div>
+                        <h2 style="margin: 0 0 16px 0; font-size: 28px; color: var(--text-primary);">Welcome to Answerly Agent</h2>
+                        <p style="margin: 0 0 32px 0; font-size: 16px; color: var(--text-secondary); max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+                            Get started by uploading your first document. Answerly will use your documents to answer questions in real-time during meetings.
+                        </p>
+                        <button class="btn-primary" onclick="showDocuments()" style="font-size: 18px; padding: 16px 32px;">
+                            📚 Upload Your First Document
+                        </button>
+                    </div>
+
+                    <!-- Active State: Has Documents -->
+                    <div id="agent-active-content" style="display: none;">
+                        <!-- Dashboard Highlights -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 40px;">
+                            <!-- Documents Card -->
+                            <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 12px; padding: 24px; color: white; box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);">
+                                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Documents</div>
+                                <div style="font-size: 36px; font-weight: bold; margin-bottom: 4px;" id="total-documents-count">0</div>
+                                <div style="font-size: 13px; opacity: 0.8;">Files uploaded</div>
+                            </div>
+
+                            <!-- Questions Answered Card -->
+                            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; padding: 24px; color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Questions Answered</div>
+                                <div style="font-size: 36px; font-weight: bold; margin-bottom: 4px;" id="questions-answered-count">0</div>
+                                <div style="font-size: 13px; opacity: 0.8;">Last 30 days</div>
+                            </div>
+                        </div>
+
+                        <!-- Turn on Answerly CTA -->
+                        <div id="answerly-activation-cta" style="text-align: center; background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%); padding: 40px; border-radius: 12px; margin-bottom: 40px; color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+                            <h3 style="margin: 0 0 12px 0; font-size: 24px;">Ready to Go Live!</h3>
+                            <p style="margin: 0 0 20px 0; opacity: 0.9;">You've uploaded documents. Activate Answerly to get real-time answers during your meetings.</p>
+                            <button class="btn-answerly" onclick="showAnswerlyModal()" style="background: white; color: var(--primary-color); font-size: 18px; padding: 14px 32px; border: none;">Turn On Answerly</button>
+                        </div>
+
+                        <!-- Recent Activity -->
+                        <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 40px;">
+                            <h3 style="margin: 0 0 20px 0; font-size: 20px;">Recent Activity</h3>
+                            <div id="recent-activity" style="min-height: 150px;">
+                                <p style="color: var(--text-secondary); text-align: center; padding: 40px 0;">No recent activity</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Meetings View -->
+            <div id="meetings-view" class="dashboard-view">
+                <div class="dashboard-container">
+                    <section class="knowledge-hub-section">
+                        <div class="section-header">
+                            <div>
+                                <h2>Meetings</h2>
+                                <p class="section-subtitle">View your meeting history and Answerly agent usage</p>
+                            </div>
+                        </div>
+
+                        <!-- Meetings History -->
+                        <div style="background: white; border-radius: 12px; padding: 30px; margin-top: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                            <div id="meetings-empty-state" style="text-align: center; padding: 60px 20px;">
+                                <div style="font-size: 64px; margin-bottom: 16px;">📅</div>
+                                <h3 style="margin: 0 0 8px 0; color: var(--text-secondary);">No Meetings Yet</h3>
+                                <p style="margin: 0; color: var(--text-secondary);">Your meeting history will appear here once you start using Answerly</p>
+                            </div>
+
+                            <div id="meetings-list" style="display: none;">
+                                <!-- Meetings will be loaded here -->
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Documents View -->
+            <div id="documents-view" class="dashboard-view">
+                <div class="dashboard-container">
+                    <section class="knowledge-hub-section">
+                        <div class="section-header">
+                            <div>
+                                <h2>Documents</h2>
+                                <p class="section-subtitle" id="documents-subtitle">Upload and manage documents for Answerly to reference during meetings</p>
+                            </div>
+                        </div>
+
+                        <!-- Knowledge Library -->
+                        <div style="background: white; border-radius: 12px; padding: 30px; margin-top: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                                <div style="flex: 1;">
+                                    <h3 style="margin: 0 0 8px 0; font-size: 20px;">📚 Knowledge Library</h3>
+                                    <p style="margin: 0; color: var(--text-secondary); font-size: 14px;" id="knowledge-library-desc">Documents available for Answerly to reference</p>
+                                </div>
+                                <div style="display: flex; gap: 12px; align-items: center;">
+                                    <input type="text" id="knowledge-search" placeholder="Search documents..." onkeyup="filterKnowledgeLibrary()" style="padding: 10px 16px; border: 2px solid var(--border-color); border-radius: 8px; width: 250px; display: none;">
+                                    <select id="knowledge-filter" onchange="filterKnowledgeLibrary()" style="padding: 10px 16px; border: 2px solid var(--border-color); border-radius: 8px; display: none;">
+                                        <option value="all">All Documents</option>
+                                        <option value="pdf">PDF</option>
+                                        <option value="docx">Word</option>
+                                        <option value="txt">Text</option>
+                                    </select>
+                                    <button class="btn-primary" onclick="openMeetingDocUploadModal()">+ Upload Documents</button>
+                                </div>
+                            </div>
+
+                            <div id="knowledge-library-content">
+                                <div id="meeting-docs-empty-state" style="text-align: center; padding: 60px 20px;">
+                                    <div style="font-size: 64px; margin-bottom: 16px;">📚</div>
+                                    <h3 style="margin: 0 0 8px 0; color: var(--text-secondary);">No Documents Yet</h3>
+                                    <p style="margin: 0; color: var(--text-secondary);">Upload documents for Answerly to reference during meetings</p>
+                                </div>
+
+                                <div id="meeting-documents-grid" style="display: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                                    <!-- Meeting documents will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Brain Tab -->
+            <div id="brain-tab" class="dashboard-tab">
+                <div class="brain-container">
+                    <section class="brain-header">
+                        <h1>🧠 Company Brain</h1>
+                        <p class="brain-subtitle">All your connected knowledge organized by topic</p>
+                        <div class="brain-stats">
+                            <div class="stat-card">
+                                <span class="stat-number" id="total-items">0</span>
+                                <span class="stat-label">Total Items</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="total-topics">0</span>
+                                <span class="stat-label">Topics</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="total-sources">0</span>
+                                <span class="stat-label">Sources</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Topic Filter -->
+                    <section class="topic-filter">
+                        <div class="filter-controls">
+                            <input type="text" id="brain-search" placeholder="Search brain..." class="search-input">
+                            <select id="topic-filter" class="filter-select" onchange="filterBrainByTopic()">
+                                <option value="all">All Topics</option>
+                            </select>
+                            <select id="source-filter" class="filter-select" onchange="filterBrainBySource()">
+                                <option value="all">All Sources</option>
+                                <option value="documentation">Documentation</option>
+                                <option value="slack">Slack</option>
+                                <option value="sheets">Google Sheets</option>
+                                <option value="notion">Notion</option>
+                                <option value="confluence">Confluence</option>
+                            </select>
+                        </div>
+                    </section>
+
+                    <!-- Brain Content organized by Topics -->
+                    <section class="brain-content">
+                        <div id="brain-topics-list">
+                            <div class="empty-brain-state">
+                                <div class="empty-icon">🧠</div>
+                                <h3>Your Brain is Empty</h3>
+                                <p>Connect data sources from the Dashboard to start building your company knowledge base</p>
+                                <button class="btn-primary" onclick="showDashboardTab(event, 'home')">Go to Dashboard</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <!-- End Brain Tab -->
+        </main>
+    </div>
+
+    <!-- Connection Modals -->
+    <div id="connection-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeConnectionModal()">&times;</span>
+
+            <!-- Documentation Connection Form -->
+            <div id="documentation-form" class="connection-form">
+                <h2>Connect Company Knowledge Base</h2>
+                <p class="form-description">Upload files or provide URLs to your company knowledge base</p>
+
+                <div class="form-tabs">
+                    <button class="tab-btn active" onclick="switchTab('upload')">Upload Files</button>
+                    <button class="tab-btn" onclick="switchTab('url')">Add URL</button>
+                </div>
+
+                <div id="upload-tab" class="tab-content active">
+                    <div class="form-group">
+                        <label>Upload Documentation Files</label>
+                        <div class="file-upload-area" id="file-drop-zone">
+                            <input type="file" id="doc-files" multiple accept=".pdf,.md,.txt,.docx" hidden>
+                            <div class="upload-prompt">
+                                <span class="upload-icon">📁</span>
+                                <p>Drag and drop files here or <a href="#" onclick="document.getElementById('doc-files').click(); return false;">browse</a></p>
+                                <p class="upload-hint">Supported: PDF, Markdown, TXT, DOCX</p>
+                            </div>
+                        </div>
+                        <div id="file-list"></div>
+                    </div>
+                </div>
+
+                <div id="url-tab" class="tab-content">
+                    <div class="form-group">
+                        <label for="doc-url">Documentation URL</label>
+                        <input type="url" id="doc-url" placeholder="https://docs.example.com">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="doc-category">Category</label>
+                    <select id="doc-category">
+                        <option value="api">API Documentation</option>
+                        <option value="user-guide">User Guides</option>
+                        <option value="technical">Technical Documentation</option>
+                        <option value="help">Help Articles</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="doc-tags">Tags (comma-separated)</label>
+                    <input type="text" id="doc-tags" placeholder="product, features, setup">
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- View Document Modal -->
+    <div id="view-document-modal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <span class="modal-close" onclick="closeViewDocumentModal()">&times;</span>
+
+            <h2 id="view-doc-title-header">Document Title</h2>
+            <p class="form-description" id="view-doc-metadata">Document metadata</p>
+
+            <div style="background: var(--background-alt); padding: 20px; border-radius: 8px; margin-top: 20px; max-height: 600px; overflow-y: auto;">
+                <pre id="view-doc-content" style="margin: 0; font-family: 'Courier New', monospace; font-size: 14px; white-space: pre-wrap; word-wrap: break-word;">Loading document content...</pre>
+            </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Answerly Activation Modal -->
+    <div id="answerly-modal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <span class="modal-close" onclick="closeAnswerlyModal()">&times;</span>
+
+            <h2 id="answerly-modal-title" class="answerly-modal-brand">Answerly.ai</h2>
+            <p class="form-description" style="text-align: center;">Answerly will listen to your conversation and provide real-time answers from your knowledge base</p>
+
+            <div id="answerly-inactive" style="text-align: center; padding: 40px 20px;">
+                <h3 style="margin-bottom: 16px;">Ready to Start Listening</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 30px; text-align: center;">
+                    Click the button below to activate Answerly. It will listen to your conversation and provide instant answers from your knowledge base.
+                </p>
+                <button class="btn-cta" onclick="startAnswerly()" style="font-size: 18px; padding: 16px 40px;">
+                    Start Listening
+                </button>
+            </div>
+
+            <div id="answerly-active" style="display: none;">
+                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, var(--primary-light), var(--accent-light)); border-radius: 12px; margin-bottom: 24px;">
+                    <div class="listening-indicator" style="display: flex; justify-content: center; align-items: center; gap: 24px;">
+                        <div style="margin-top: 8px;">
+                            <span style="display: inline-block; width: 10px; height: 10px; background: #10b981; border-radius: 50%; animation: pulse 1.5s ease-in-out infinite;"></span>
+                            <span style="margin-left: 8px; font-weight: 600; color: var(--primary-color);">LISTENING...</span>
+                        </div>
+                        <div id="meeting-timer" style="font-size: 20px; font-weight: 700; color: var(--primary-color); font-family: 'Courier New', monospace;">
+                            00:00
+                        </div>
+                    </div>
+                    <div id="time-limit-warning" style="margin-top: 12px; font-size: 13px; color: var(--text-secondary); display: none;">
+                        <span id="time-remaining-text"></span>
+                    </div>
+                </div>
+
+                <div style="background: white; border: 2px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 12px; font-size: 16px;">💬 Live Conversation</h4>
+                    <div id="live-transcript" style="min-height: 100px; max-height: 200px; overflow-y: auto; padding: 12px; background: var(--background-alt); border-radius: 8px; font-size: 14px; color: var(--text-secondary);">
+                        Waiting for conversation...
+                    </div>
+                </div>
+
+                <div style="background: white; border: 2px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 12px; font-size: 16px;">✨ Answerly Responses</h4>
+                    <div id="answerly-responses" style="min-height: 150px; max-height: 250px; overflow-y: auto;">
+                        <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                            No questions detected yet. Answerly will automatically respond when it hears relevant questions.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="modal-close" onclick="closeSettingsModal()">&times;</span>
+
+            <h2>Account Settings</h2>
+            <p class="form-description">Manage your account, subscription, and preferences</p>
+
+            <!-- Account Information -->
+            <div style="background: var(--background-alt); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 16px;">Account Information</h3>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Name</label>
+                    <div id="settings-name" style="padding: 12px; background: white; border-radius: 8px;">-</div>
+                </div>
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Email</label>
+                    <div id="settings-email" style="padding: 12px; background: white; border-radius: 8px;">-</div>
+                </div>
+            </div>
+
+            <!-- Subscription Plan -->
+            <div style="background: var(--background-alt); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 16px;">Subscription Plan</h3>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Current Plan</label>
+                    <div id="settings-current-plan" style="padding: 12px; background: white; border-radius: 8px; font-size: 18px; font-weight: 600; color: var(--primary-color);">Free</div>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Change Plan</label>
+                    <select id="settings-plan-select" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 16px;">
+                        <option value="free">Starter - Free (15 min meetings)</option>
+                        <option value="pro">Pro - $19/month (2 hour meetings)</option>
+                        <option value="business">Business - $29/month (Unlimited meetings)</option>
+                    </select>
+                </div>
+                <button class="btn-primary" onclick="updateSubscriptionPlan()" style="margin-right: 12px;">Update Plan</button>
+                <button class="btn-secondary" onclick="pauseSubscription()">Pause Subscription</button>
+            </div>
+
+            <!-- Danger Zone -->
+            <div style="background: #fff5f5; padding: 20px; border-radius: 8px; border: 2px solid #feb2b2;">
+                <h3 style="margin-bottom: 16px; color: #c53030;">Danger Zone</h3>
+                <p style="margin-bottom: 16px; color: #742a2a;">Once you delete your account, there is no going back. This action cannot be undone.</p>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #742a2a;">Type DELETE to confirm</label>
+                    <input type="text" id="delete-confirm-input" placeholder="Type DELETE to confirm" style="width: 100%; padding: 12px; border: 2px solid #feb2b2; border-radius: 8px; font-size: 16px;">
+                </div>
+                <button class="btn-secondary" onclick="deleteAccount()" style="background: #c53030; color: white; border-color: #c53030;">Delete Account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Document Modal -->
+    <div id="edit-document-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="modal-close" onclick="closeEditDocumentModal()">&times;</span>
+
+            <h2>Edit Document</h2>
+            <p class="form-description">Update document information and content</p>
+
+            <div class="form-group">
+                <label for="edit-doc-title">Document Title</label>
+                <input type="text" id="edit-doc-title" placeholder="Document title">
+            </div>
+
+            </div>
+
+            <div class="form-group">
+                <label for="edit-doc-tags">Tags (comma-separated)</label>
+                <input type="text" id="edit-doc-tags" placeholder="product, features, setup">
+            </div>
+
+            <div class="form-group">
+                <label for="edit-doc-status">Status</label>
+                <select id="edit-doc-status">
+                    <option value="active">Active</option>
+                    <option value="archived">Archived</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="edit-doc-content">Document Content</label>
+                <textarea id="edit-doc-content" rows="15" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-family: 'Courier New', monospace; font-size: 14px;" placeholder="Document content (for text-based files)"></textarea>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Create Project Modal -->
+    <div id="create-project-modal" class="modal">
+        <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+            <span class="modal-close" onclick="closeCreateProjectModal()">&times;</span>
+
+            <h2>Create New Project</h2>
+            <p class="form-description">Set up a new client project with all the details</p>
+
+            <div class="form-group">
+                <label for="project-client-name">Client Name *</label>
+                <input type="text" id="project-client-name" placeholder="Enter client/company name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="project-description">Project Description *</label>
+                <div style="border: 2px solid var(--border-color); border-radius: 8px; background: white;">
+                    <div style="border-bottom: 2px solid var(--border-color); padding: 8px; background: var(--background-alt);">
+                        <button type="button" onclick="formatText('bold')" style="padding: 6px 12px; margin-right: 4px; border: 1px solid var(--border-color); background: white; border-radius: 4px; cursor: pointer;"><strong>B</strong></button>
+                        <button type="button" onclick="formatText('italic')" style="padding: 6px 12px; margin-right: 4px; border: 1px solid var(--border-color); background: white; border-radius: 4px; cursor: pointer;"><em>I</em></button>
+                        <button type="button" onclick="formatText('underline')" style="padding: 6px 12px; margin-right: 4px; border: 1px solid var(--border-color); background: white; border-radius: 4px; cursor: pointer;"><u>U</u></button>
+                    </div>
+                    <div id="project-description" contenteditable="true" style="min-height: 120px; padding: 12px; outline: none;" placeholder="Describe the project scope, goals, and deliverables..."></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="project-logo">Client Logo</label>
+                <input type="file" id="project-logo" accept="image/*">
+            </div>
+
+            <div class="form-group">
+                <label for="project-documents">Contract & Documents</label>
+                <input type="file" id="project-documents" multiple accept=".pdf,.docx,.doc,.txt">
+                <div id="project-docs-list" style="margin-top: 8px;"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="project-contract-value">Contract Value ($)</label>
+                <input type="number" id="project-contract-value" placeholder="0.00" step="0.01">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label for="project-start-date">Start Date *</label>
+                    <input type="date" id="project-start-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="project-end-date">End Date *</label>
+                    <input type="date" id="project-end-date" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="project-manager">Project Manager *</label>
+                <input type="text" id="project-manager" placeholder="Assign project manager" required>
+            </div>
+
+            <div class="form-group">
+                <label>Team Members</label>
+                <div id="team-members-list" style="margin-bottom: 12px;"></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: end;">
+                    <div>
+                        <input type="text" id="team-member-firstname" placeholder="First Name" style="width: 100%;">
+                    </div>
+                    <div>
+                        <input type="text" id="team-member-lastname" placeholder="Last Name" style="width: 100%;">
+                    </div>
+                    <div>
+                        <input type="email" id="team-member-email" placeholder="Email" style="width: 100%;">
+                    </div>
+                    <div>
+                        <button type="button" class="btn-secondary" onclick="addTeamMember()">+ Add</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button class="btn-primary" onclick="createProject()">Create Project</button>
+                <button class="btn-secondary" onclick="closeCreateProjectModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Meeting Document Upload Modal -->
+    <div id="meeting-doc-upload-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="modal-close" onclick="closeMeetingDocUploadModal()">&times;</span>
+
+            <h2>Upload Meeting Documents</h2>
+            <p class="form-description">Upload documents for Answerly to reference during meetings</p>
+
+            <div class="form-group">
+                <label for="meeting-doc-files">Select Documents</label>
+                <input type="file" id="meeting-doc-files" multiple accept=".pdf,.docx,.doc,.txt,.md,.csv,.ppt,.pptx">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">Supported: PDF, DOCX, TXT, CSV, PPT, PPTX</p>
+                <div id="meeting-doc-files-list" style="margin-top: 12px;"></div>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button class="btn-primary" onclick="uploadMeetingDocuments()">Upload</button>
+                <button class="btn-secondary" onclick="closeMeetingDocUploadModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Answerly Listening Popup (Bottom Right Corner) -->
+    <div id="answerly-listening-popup" style="display: none; position: fixed; bottom: 20px; right: 20px; width: 350px; background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 10000; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%); padding: 20px; color: white;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; font-size: 18px;">Answerly Agent</h3>
+                <button onclick="closeAnswerlyPopup()" style="background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; line-height: 1;">&times;</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 10px; height: 10px; background: #fff; border-radius: 50%; animation: pulse 1.5s ease-in-out infinite;"></div>
+                <span style="font-weight: 600; font-size: 14px;">LISTENING...</span>
+            </div>
+            <div id="answerly-timer" style="font-size: 32px; font-weight: 700; font-family: 'Courier New', monospace; margin-top: 12px; letter-spacing: 2px;">00:00</div>
+        </div>
+        <div style="padding: 20px; max-height: 300px; overflow-y: auto;">
+            <div id="answerly-popup-conversation" style="font-size: 14px; color: #666;">
+                <p style="font-style: italic; color: #999;">Listening to your conversation...</p>
+            </div>
+        </div>
+        <div style="background: var(--background-alt); padding: 12px 20px; text-align: center; font-size: 12px; color: var(--text-secondary); border-top: 1px solid var(--border-color);">
+            <strong>Answerly.ai</strong>
+        </div>
+    </div>
+
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+    </style>
+
+    <!-- Add Task Modal -->
+    <div id="add-task-modal" class="modal" style="position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);">
+        <div style="background: white; width: 100%; height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+            <div style="padding: 24px 40px; border-bottom: 2px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: white; position: sticky; top: 0; z-index: 2001;">
+                <h2 style="margin: 0;">Add New Task</h2>
+                <button onclick="closeAddTaskModal()" style="background: transparent; border: none; font-size: 32px; cursor: pointer; color: var(--text-secondary);">&times;</button>
+            </div>
+            <div style="flex: 1; padding: 40px; max-width: 900px; margin: 0 auto; width: 100%;">
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Task Title *</label>
+                <input type="text" id="task-title" placeholder="Enter task title" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Description</label>
+                <div style="margin-bottom: 8px; display: flex; gap: 8px;">
+                    <button type="button" onclick="formatTaskText('bold')" style="padding: 6px 12px; border: 1px solid var(--border-color); border-radius: 4px; background: white; cursor: pointer; font-weight: bold;">B</button>
+                    <button type="button" onclick="formatTaskText('italic')" style="padding: 6px 12px; border: 1px solid var(--border-color); border-radius: 4px; background: white; cursor: pointer; font-style: italic;">I</button>
+                    <button type="button" onclick="formatTaskText('underline')" style="padding: 6px 12px; border: 1px solid var(--border-color); border-radius: 4px; background: white; cursor: pointer; text-decoration: underline;">U</button>
+                    <button type="button" onclick="formatTaskText('insertUnorderedList')" style="padding: 6px 12px; border: 1px solid var(--border-color); border-radius: 4px; background: white; cursor: pointer;">• List</button>
+                </div>
+                <div id="task-description" contenteditable="true" placeholder="Enter task description" style="width: 100%; min-height: 100px; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; background: white; overflow-y: auto;"></div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Assign To</label>
+                <select id="task-assignee" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px;">
+                    <option value="">Select team member...</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Due Date</label>
+                <input type="date" id="task-due-date" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Attach Files</label>
+                <input type="file" id="task-files" multiple style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px;">
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 30px;">
+                <button onclick="closeAddTaskModal()" class="btn-secondary">Cancel</button>
+                <button onclick="createTask()" class="btn-primary">Create Task</button>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Team Member Modal -->
+    <div id="add-team-member-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="modal-close" onclick="closeAddTeamMemberModal()">&times;</span>
+            <h2>Add Team Member</h2>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">First Name *</label>
+                <input type="text" id="new-member-firstname" placeholder="Enter first name" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Last Name *</label>
+                <input type="text" id="new-member-lastname" placeholder="Enter last name" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Title</label>
+                <input type="text" id="new-member-title" placeholder="e.g., Project Manager, Developer" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Email *</label>
+                <input type="email" id="new-member-email" placeholder="email@example.com" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px;">
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button onclick="closeAddTeamMemberModal()" class="btn-secondary">Cancel</button>
+                <button onclick="addProjectTeamMember()" class="btn-primary">Add & Send Invite</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Details Modal -->
+    <div id="task-details-modal" class="modal" style="position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);">
+        <div style="background: white; width: 100%; height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+            <div style="padding: 24px 40px; border-bottom: 2px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: white; position: sticky; top: 0; z-index: 2001;">
+                <h2 style="margin: 0;" id="task-details-title">Task Details</h2>
+                <button onclick="closeTaskDetailsModal()" style="background: transparent; border: none; font-size: 32px; cursor: pointer; color: var(--text-secondary);">&times;</button>
+            </div>
+            <div style="flex: 1; padding: 40px; max-width: 1200px; margin: 0 auto; width: 100%;">
+                <div id="task-details-content">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Onboarding Item Modal -->
+    <div id="add-onboarding-item-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="modal-close" onclick="closeOnboardingItemModal()">&times;</span>
+            <h2 id="onboarding-item-modal-title">Add Onboarding Item</h2>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Task Description *</label>
+                <textarea id="onboarding-item-text" placeholder="Enter task description" rows="4" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-family: inherit; font-size: 15px; resize: vertical;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Link (Optional)</label>
+                <input type="url" id="onboarding-item-url" placeholder="https://example.com/resource" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">Add a helpful link to documentation, tools, or resources</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Link Text (Optional)</label>
+                <input type="text" id="onboarding-item-link-text" placeholder="e.g., View Documentation" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px;">
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button onclick="closeOnboardingItemModal()" class="btn-secondary">Cancel</button>
+                <button onclick="saveOnboardingItem()" class="btn-primary">Save Item</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add mammoth.js for .docx parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
