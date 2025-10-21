@@ -66,17 +66,20 @@ function showAnswerlyDashboard() {
         view.classList.remove('active');
     });
 
-    // Show Answerly dashboard view
-    document.getElementById('answerly-dashboard-view').classList.add('active');
+    // Show dashboard home view (Agent board)
+    document.getElementById('dashboard-home-view').classList.add('active');
 
     // Update nav links
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
     });
-    document.querySelector('.nav-link[onclick="showAnswerlyDashboard()"]').classList.add('active');
+    const agentNavLink = document.querySelector('.nav-link[onclick="showDashboardHome()"]');
+    if (agentNavLink) {
+        agentNavLink.classList.add('active');
+    }
 
-    // Load stats
-    loadAnswerlyDashboardStats();
+    // Load dashboard highlights to show empty state or active content
+    loadDashboardHighlights();
 }
 
 
@@ -1257,6 +1260,12 @@ function closeAnswerlyModal() {
 async function startAnswerly() {
     // Create a new meeting session
     const token = localStorage.getItem('token');
+
+    // Generate a fallback meeting ID in case backend fails
+    currentMeetingId = 'meeting_' + Date.now();
+    meetingTranscript = '';
+    meetingQuestions = [];
+
     try {
         const response = await fetch('/api/meeting-notes/start', {
             method: 'POST',
@@ -1272,11 +1281,11 @@ async function startAnswerly() {
         if (response.ok) {
             const data = await response.json();
             currentMeetingId = data.meetingId;
-            meetingTranscript = '';
-            meetingQuestions = [];
+        } else {
+            console.warn('Backend meeting API unavailable, using local meeting ID:', currentMeetingId);
         }
     } catch (error) {
-        console.error('Error starting meeting session:', error);
+        console.warn('Backend meeting API unavailable, using local meeting ID:', currentMeetingId, error);
     }
 
     // Hide inactive view, show active view
@@ -1403,16 +1412,47 @@ async function stopAnswerly() {
 }
 
 async function detectAndAnswerQuestions(text) {
-    // Simple question detection - trigger on specific keywords
-    const questionWords = ['how', 'will', 'can', 'what', 'when', 'want', 'does', 'if'];
+    // Comprehensive question detection - trigger on question words and patterns
+    const questionWords = [
+        'how', 'what', 'when', 'where', 'why', 'who',
+        'is', 'are', 'was', 'were', 'will', 'would', 'could', 'should',
+        'can', 'do', 'does', 'did', 'has', 'have', 'had',
+        'which', 'whose', 'whom'
+    ];
+
     const sentences = text.toLowerCase().split(/[.!?]+/);
 
     for (const sentence of sentences) {
-        const isQuestion = questionWords.some(word => sentence.trim().startsWith(word)) || sentence.includes('?');
+        const trimmedSentence = sentence.trim();
 
-        if (isQuestion && sentence.trim().length > 10) {
-            // Generate answer from knowledge base
-            await generateAnswer(sentence.trim());
+        // Check if sentence starts with a question word
+        const startsWithQuestionWord = questionWords.some(word =>
+            trimmedSentence.startsWith(word + ' ') || trimmedSentence.startsWith(word + "'")
+        );
+
+        // Check if sentence contains a question mark (for tone-based questions)
+        const hasQuestionMark = sentence.includes('?');
+
+        // Detect auxiliary verb patterns (e.g., "Do you...", "Is this...", "Can we...")
+        const auxiliaryPattern = /^(is|are|was|were|will|would|could|should|can|do|does|did|has|have|had)\s+/i;
+        const hasAuxiliaryPattern = auxiliaryPattern.test(trimmedSentence);
+
+        // Consider it a question if it meets any criteria and is substantial
+        const isQuestion = (startsWithQuestionWord || hasQuestionMark || hasAuxiliaryPattern) && trimmedSentence.length > 5;
+
+        if (isQuestion) {
+            // Check if we've already asked this question (prevent duplicates)
+            const alreadyAsked = meetingQuestions.some(q =>
+                q.question.toLowerCase().trim() === trimmedSentence
+            );
+
+            if (!alreadyAsked) {
+                console.log('Detected question:', trimmedSentence);
+                // Generate answer from knowledge base
+                await generateAnswer(trimmedSentence);
+            } else {
+                console.log('Question already asked, skipping:', trimmedSentence);
+            }
         }
     }
 }
@@ -1422,7 +1462,7 @@ async function generateAnswer(question) {
     const popupBody = document.getElementById('answerly-popup-body');
 
     // Clear initial text in popup
-    if (popupBody.querySelector('.conversation-flow-text')) {
+    if (popupBody && popupBody.querySelector('.conversation-flow-text')) {
         popupBody.innerHTML = '';
     }
 
@@ -1432,8 +1472,14 @@ async function generateAnswer(question) {
     }
 
     // Add question to modal UI
+    let qaBlock = null;
     if (responsesDiv) {
-        const qaBlock = document.createElement('div');
+        // Clear "No questions detected" message if present
+        if (responsesDiv.textContent.includes('No questions detected')) {
+            responsesDiv.innerHTML = '';
+        }
+
+        qaBlock = document.createElement('div');
         qaBlock.style.cssText = 'margin-bottom: 16px; padding: 16px; background: var(--background-alt); border-radius: 8px; border-left: 4px solid var(--primary-color);';
         qaBlock.innerHTML = `
             <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">❓ ${question}</div>
@@ -1442,44 +1488,56 @@ async function generateAnswer(question) {
             </div>
         `;
         responsesDiv.insertBefore(qaBlock, responsesDiv.firstChild);
+    } else {
+        console.warn('answerly-responses div not found');
     }
 
     // Add question to popup
-    const popupQA = document.createElement('div');
-    popupQA.className = 'popup-qa-item';
-    popupQA.innerHTML = `
-        <div class="popup-question">❓ ${question}</div>
-        <div class="popup-answer">💭 Searching...</div>
-    `;
-    popupBody.insertBefore(popupQA, popupBody.firstChild);
+    let popupQA = null;
+    if (popupBody) {
+        popupQA = document.createElement('div');
+        popupQA.className = 'popup-qa-item';
+        popupQA.innerHTML = `
+            <div class="popup-question">❓ ${question}</div>
+            <div class="popup-answer">💭 Searching...</div>
+        `;
+        popupBody.insertBefore(popupQA, popupBody.firstChild);
+    }
 
     // Generate answer from knowledge base
     try {
         const answer = await simulateAIAnswer(question);
+        console.log('Generated answer for display:', answer ? answer.substring(0, 150) : 'null/undefined');
         const answered = !answer.includes('couldn\'t find') && !answer.includes('error') && !answer.includes('I searched through');
         const sourceDoc = answer.match(/Based on "([^"]+)"/)?.[1] || '';
 
         // Update modal
-        if (responsesDiv) {
-            const qaBlock = responsesDiv.firstChild;
+        if (qaBlock) {
             qaBlock.innerHTML = `
                 <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">
-                    ${answered ? '✅' : '❌'} ${question}
+                    Q: ${question}
                 </div>
                 <div style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
-                    ${answered ? answer : `<strong style="color: #dc3545;">Not found</strong><br><br>${answer}<br><br>💡 <em>Please upload relevant documents to answer this question in future meetings.</em>`}
+                    A: ${answered ? answer : '<strong style="color: #dc3545;">Not Available</strong>'}
                 </div>
             `;
+            console.log('Updated qaBlock with answer. Answered:', answered);
+        } else {
+            console.warn('qaBlock not created, cannot update answer display');
         }
 
         // Update popup
-        popupQA.innerHTML = `
-            <div class="popup-question">${answered ? '✅' : '❌'} ${question}</div>
-            <div class="popup-answer">${answered ? answer : '<strong style="color: #dc3545;">Not found</strong> - ' + answer}</div>
-        `;
+        if (popupQA) {
+            popupQA.innerHTML = `
+                <div class="popup-question">${answered ? '✅' : '❌'} ${question}</div>
+                <div class="popup-answer">${answered ? answer : '<strong style="color: #dc3545;">Not found</strong> - ' + answer}</div>
+            `;
+        }
 
         // Auto-scroll popup to top
-        popupBody.scrollTop = 0;
+        if (popupBody) {
+            popupBody.scrollTop = 0;
+        }
 
         // Save question to meeting notes
         if (currentMeetingId) {
@@ -1506,9 +1564,10 @@ async function generateAnswer(question) {
             }
         }
     } catch (error) {
+        console.error('Error in generateAnswer:', error);
+
         // Update modal
-        if (responsesDiv) {
-            const qaBlock = responsesDiv.firstChild;
+        if (qaBlock) {
             qaBlock.innerHTML = `
                 <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">❓ ${question}</div>
                 <div style="color: var(--error-color); font-size: 14px;">
@@ -1518,10 +1577,12 @@ async function generateAnswer(question) {
         }
 
         // Update popup
-        popupQA.innerHTML = `
-            <div class="popup-question">❓ ${question}</div>
-            <div class="popup-answer" style="color: var(--error-color);">❌ Error generating answer</div>
-        `;
+        if (popupQA) {
+            popupQA.innerHTML = `
+                <div class="popup-question">❓ ${question}</div>
+                <div class="popup-answer" style="color: var(--error-color);">❌ Error generating answer</div>
+            `;
+        }
     }
 
     if (responsesDiv) {
@@ -1790,7 +1851,7 @@ async function deleteMeeting(meetingId) {
 
 async function simulateAIAnswer(question) {
     try {
-        // Get documents from localStorage
+        // Check if user has documents
         const storedDocs = localStorage.getItem('meetingDocuments');
         const documents = storedDocs ? JSON.parse(storedDocs) : [];
 
@@ -1798,129 +1859,262 @@ async function simulateAIAnswer(question) {
             return "I couldn't find any documents in your knowledge base. Please upload some documents first.";
         }
 
-        // Enhanced keyword-based search - search for ALL words in the question
-        const questionLower = question.toLowerCase();
-        // Remove common stop words but keep most words
-        const stopWords = ['a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or', 'but'];
-        const keywords = questionLower
-            .replace(/[^\w\s]/g, ' ') // Remove punctuation
-            .split(/\s+/)
-            .filter(word => word.length > 2 && !stopWords.includes(word));
+        // Query the backend API using OpenAI + Pinecone
+        const token = localStorage.getItem('token');
 
-        console.log('Searching for keywords:', keywords);
+        console.log('Querying backend API for question:', question);
 
-        let bestMatch = null;
-        let bestScore = 0;
-        let allMatches = [];
-
-        for (const doc of documents) {
-            // Try to extract text content from the document
-            try {
-                let content = '';
-
-                // For text files, decode the base64 data
-                if (doc.type === 'text/plain' || doc.type === 'application/json' ||
-                    doc.type === 'text/markdown' || doc.type === 'text/html') {
-                    // Decode base64 to text
-                    const base64Data = doc.data.split(',')[1]; // Remove data:type;base64, prefix
-                    content = atob(base64Data);
-                } else if (doc.type === 'application/pdf') {
-                    // For PDFs, we'll extract text from base64
-                    // Note: This is a simplified approach. For better PDF parsing,
-                    // we'd need a library like pdf.js
-                    const base64Data = doc.data.split(',')[1];
-                    const binaryString = atob(base64Data);
-                    // Extract visible text from PDF (basic approach)
-                    content = binaryString.replace(/[^\x20-\x7E\n]/g, ' ');
-                } else {
-                    // Skip non-text documents
-                    console.log('Skipping non-text document:', doc.name);
-                    continue;
+        const response = await fetch('/api/company-brain/query', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                question: question,
+                options: {
+                    topK: 3,
+                    includeContext: true
                 }
+            })
+        });
 
-                if (content) {
-                    const contentLower = content.toLowerCase();
-
-                    // Enhanced scoring: each keyword gets points, partial matches count
-                    let score = 0;
-                    let matchedKeywords = [];
-
-                    keywords.forEach(keyword => {
-                        // Exact matches (word boundary)
-                        const exactMatches = (contentLower.match(new RegExp(`\\b${keyword}\\b`, 'g')) || []).length;
-                        // Partial matches (contains keyword)
-                        const partialMatches = (contentLower.match(new RegExp(keyword, 'g')) || []).length;
-
-                        if (exactMatches > 0) {
-                            score += exactMatches * 3; // Exact matches worth more
-                            matchedKeywords.push(keyword);
-                        } else if (partialMatches > 0) {
-                            score += partialMatches; // Partial matches worth less
-                            matchedKeywords.push(keyword);
-                        }
-                    });
-
-                    if (score > 0) {
-                        allMatches.push({
-                            doc,
-                            content,
-                            score,
-                            matchedKeywords
-                        });
-
-                        if (score > bestScore) {
-                            bestScore = score;
-                            bestMatch = {
-                                doc,
-                                content,
-                                score,
-                                matchedKeywords
-                            };
-                        }
-                    }
-                }
-            } catch (err) {
-                console.error('Error reading document:', doc.name, err);
-            }
+        if (!response.ok) {
+            console.error('API error:', response.status, response.statusText);
+            // Fallback to basic search if API fails
+            return await fallbackKeywordSearch(question, documents);
         }
 
-        console.log('Found matches:', allMatches.length, 'Best score:', bestScore);
+        const data = await response.json();
 
-        if (bestMatch && bestMatch.score > 0) {
-            // Extract relevant snippets containing the matched keywords
-            const content = bestMatch.content;
-            const contentLower = content.toLowerCase();
+        console.log('API response:', data);
 
-            let snippets = [];
-
-            // Find snippets for each matched keyword
-            bestMatch.matchedKeywords.slice(0, 3).forEach(keyword => {
-                const index = contentLower.indexOf(keyword);
-                if (index !== -1) {
-                    const start = Math.max(0, index - 150);
-                    const end = Math.min(content.length, index + 350);
-                    let snippet = content.substring(start, end).trim();
-
-                    // Clean up snippet
-                    if (start > 0) snippet = '...' + snippet;
-                    if (end < content.length) snippet = snippet + '...';
-
-                    snippets.push(snippet);
-                }
-            });
-
-            // Combine snippets or use first one
-            const resultSnippet = snippets.length > 0 ? snippets[0] : content.substring(0, 500);
-
-            return `Based on "${bestMatch.doc.name}" (matched: ${bestMatch.matchedKeywords.join(', ')}):\n\n${resultSnippet}`;
+        if (data.answer && data.sources && data.sources.length > 0) {
+            // Format answer with source information
+            const topSource = data.sources[0];
+            return `Based on "${topSource.title}" (confidence: ${(topSource.score * 100).toFixed(0)}%):\n\n${data.answer}`;
+        } else if (data.answer) {
+            return data.answer;
         } else {
-            return `I searched through ${documents.length} document(s) but couldn't find relevant information. Keywords searched: ${keywords.join(', ')}. Try rephrasing your question or check if your documents contain this information.`;
+            return `I searched through your documents but couldn't find a relevant answer to: "${question}". Try rephrasing your question or ensure your documents contain this information.`;
         }
 
     } catch (error) {
         console.error('Error querying knowledge base:', error);
-        return "Sorry, I encountered an error while searching your knowledge base. Please make sure you have uploaded documents to the Company Knowledge Base.";
+
+        // Fallback to basic search
+        const storedDocs = localStorage.getItem('meetingDocuments');
+        const documents = storedDocs ? JSON.parse(storedDocs) : [];
+
+        if (documents.length > 0) {
+            const answer = await fallbackKeywordSearch(question, documents);
+            console.log('Fallback search returned:', answer ? answer.substring(0, 100) : 'null/undefined');
+            return answer;
+        }
+
+        return "Sorry, I encountered an error while searching your knowledge base. Please make sure you have uploaded documents.";
     }
+}
+
+// Fallback keyword search when API is unavailable
+async function fallbackKeywordSearch(question, documents) {
+    const questionLower = question.toLowerCase();
+
+    // Extract keywords - keep numbers and meaningful words
+    const stopWords = ['a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or', 'but'];
+
+    // Extract ALL words from the question - match every single word
+    const allTokens = questionLower.match(/\w+|[+\-*/=]/g) || [];
+
+    // Keep ALL words - no filtering by length or stop words
+    // This ensures every word in the question is matched against documents
+    const keywords = allTokens.filter(token => token.length > 0);
+
+    // If no keywords found, use the whole question
+    if (keywords.length === 0) {
+        keywords.push(questionLower.trim());
+    }
+
+    console.log('Fallback search - keywords:', keywords);
+    console.log('Searching for question:', questionLower);
+
+    let bestMatch = null;
+    let bestScore = 0;
+
+    for (const doc of documents) {
+        try {
+            let content = '';
+
+            if (doc.type === 'text/plain' || doc.type === 'application/json' ||
+                doc.type === 'text/markdown' || doc.type === 'text/html' ||
+                doc.type === 'text/csv' || doc.name.endsWith('.csv') ||
+                doc.name.endsWith('.txt')) {
+                const base64Data = doc.data.split(',')[1];
+                content = atob(base64Data);
+            } else if (doc.type === 'application/pdf') {
+                const base64Data = doc.data.split(',')[1];
+                const binaryString = atob(base64Data);
+                content = binaryString.replace(/[^\x20-\x7E\n]/g, ' ');
+            } else if (doc.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                       doc.name.endsWith('.docx')) {
+                // .docx files - use mammoth.js to properly extract text
+                console.log('Processing .docx file:', doc.name);
+
+                // Convert base64 to ArrayBuffer for mammoth.js
+                const base64Data = doc.data.split(',')[1];
+                const binaryString = atob(base64Data);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+
+                try {
+                    // Use mammoth.js to extract text from .docx
+                    if (typeof mammoth !== 'undefined') {
+                        const result = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
+                        content = result.value;
+                        console.log('Extracted text from .docx using mammoth.js');
+                    } else {
+                        console.warn('mammoth.js not loaded, skipping .docx file');
+                        continue;
+                    }
+                } catch (error) {
+                    console.error('Error extracting .docx content:', error);
+                    continue;
+                }
+            } else if (doc.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+                       doc.type === 'application/vnd.ms-powerpoint' ||
+                       doc.name.endsWith('.pptx') || doc.name.endsWith('.ppt')) {
+                // PowerPoint files - extract text (basic extraction)
+                console.log('Processing PowerPoint file:', doc.name);
+                const base64Data = doc.data.split(',')[1];
+                const binaryString = atob(base64Data);
+                // Extract readable text from the binary content
+                content = binaryString.replace(/[^\x20-\x7E\n]/g, ' ')
+                    .replace(/<[^>]*>/g, ' ') // Remove XML tags
+                    .replace(/\s+/g, ' ') // Normalize whitespace
+                    .trim();
+                console.log('Extracted text from PowerPoint file');
+            } else {
+                console.log('Skipping unsupported document type:', doc.type, doc.name);
+                continue;
+            }
+
+            console.log(`Searching in document: ${doc.name} (${content.length} chars)`);
+            console.log('Content preview:', content.substring(0, 200));
+
+            if (content) {
+                const contentLower = content.toLowerCase();
+                let score = 0;
+                let matchedKeywords = [];
+
+                // First, check if the exact question or similar phrase exists
+                if (contentLower.includes(questionLower)) {
+                    score += 100; // High score for exact question match
+                    matchedKeywords.push('exact match');
+                    console.log('Found exact question match!');
+                }
+
+                // Also search for individual keywords
+                keywords.forEach(keyword => {
+                    // Escape special regex characters in keyword
+                    const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+                    const exactMatches = (contentLower.match(new RegExp(`\\b${escapedKeyword}\\b`, 'g')) || []).length;
+                    const partialMatches = (contentLower.match(new RegExp(escapedKeyword, 'g')) || []).length;
+
+                    if (exactMatches > 0) {
+                        score += exactMatches * 3;
+                        matchedKeywords.push(keyword);
+                        console.log(`Found exact matches for "${keyword}":`, exactMatches);
+                    } else if (partialMatches > 0) {
+                        score += partialMatches;
+                        matchedKeywords.push(keyword);
+                        console.log(`Found partial matches for "${keyword}":`, partialMatches);
+                    }
+                });
+
+                console.log(`Document ${doc.name} score: ${score}, matched keywords:`, matchedKeywords);
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMatch = { doc, content, score, matchedKeywords };
+                }
+            }
+        } catch (err) {
+            console.error('Error reading document:', doc.name, err);
+        }
+    }
+
+    console.log('Best match:', bestMatch ? bestMatch.doc.name : 'none', 'Score:', bestScore);
+
+    if (bestMatch && bestMatch.score > 0) {
+        const content = bestMatch.content;
+        const contentLower = content.toLowerCase();
+
+        // Try to find the question in the document and extract the answer
+        const questionIndex = contentLower.indexOf(questionLower);
+
+        if (questionIndex !== -1) {
+            // Found the exact question - now find where it ends
+            const afterQuestionStart = content.substring(questionIndex);
+
+            // Find the end of the question (look for ?, :, or newline)
+            const questionEndMatch = afterQuestionStart.match(/[\?\:]/);
+
+            if (questionEndMatch) {
+                // Skip past the question mark/colon and any whitespace
+                const answerStartIndex = questionIndex + questionEndMatch.index + 1;
+                const afterAnswer = content.substring(answerStartIndex).trim();
+
+                // Extract the answer - take text until we hit another question or significant break
+                // Split by question marks or double newlines to isolate the answer
+                const answerText = afterAnswer.split(/[\?\n]{2,}/)[0].trim();
+
+                // Clean up the answer - remove extra whitespace
+                const cleanAnswer = answerText.replace(/\s+/g, ' ').trim();
+
+                if (cleanAnswer && cleanAnswer.length > 0 && cleanAnswer.length < 500) {
+                    return `Based on "${bestMatch.doc.name}":\n\n${cleanAnswer}`;
+                }
+            }
+
+            // Fallback: take text after the question
+            const afterQuestion = content.substring(questionIndex + questionLower.length).trim();
+            const nextSentences = afterQuestion.substring(0, 200).split(/[\.\!\?]/)[0];
+            if (nextSentences && nextSentences.length > 0) {
+                return `Based on "${bestMatch.doc.name}":\n\n${nextSentences.trim()}`;
+            }
+        }
+
+        // Fallback: use keyword-based extraction but with smaller window
+        const keyword = bestMatch.matchedKeywords[0];
+        const index = contentLower.indexOf(keyword);
+
+        if (index !== -1) {
+            // Find sentence boundaries around the keyword
+            const start = Math.max(0, index - 100);
+            const end = Math.min(content.length, index + 200);
+            let snippet = content.substring(start, end).trim();
+
+            // Try to extract just the sentence containing the keyword
+            const sentences = snippet.split(/[\.\!\?]/);
+            for (const sentence of sentences) {
+                if (sentence.toLowerCase().includes(keyword)) {
+                    return `Based on "${bestMatch.doc.name}":\n\n${sentence.trim()}`;
+                }
+            }
+
+            if (start > 0) snippet = '...' + snippet;
+            if (end < content.length) snippet = snippet + '...';
+
+            return `Based on "${bestMatch.doc.name}":\n\n${snippet}`;
+        }
+
+        return `Based on "${bestMatch.doc.name}":\n\n${content.substring(0, 300)}...`;
+    }
+
+    return `I searched through ${documents.length} document(s) but couldn't find relevant information for: "${question}".`;
 }
 
 // Meeting Timer Functions
@@ -2301,14 +2495,28 @@ function showMeetings() {
 
 let meetingDocuments = [];
 
+// Track which meeting a document upload is for
+let currentUploadMeetingId = null;
+
 function openMeetingDocUploadModal() {
+    currentUploadMeetingId = null; // Clear any previous meeting ID
     document.getElementById('meeting-doc-upload-modal').style.display = 'block';
+}
+
+function uploadDocumentForMeeting(meetingId) {
+    currentUploadMeetingId = meetingId; // Store the meeting ID
+    showDocuments(); // Navigate to Documents tab
+    // Auto-open the upload modal after a short delay to allow page transition
+    setTimeout(() => {
+        openMeetingDocUploadModal();
+    }, 300);
 }
 
 function closeMeetingDocUploadModal() {
     document.getElementById('meeting-doc-upload-modal').style.display = 'none';
     document.getElementById('meeting-doc-files').value = '';
     document.getElementById('meeting-doc-files-list').innerHTML = '';
+    currentUploadMeetingId = null; // Clear the meeting ID
 }
 
 async function uploadMeetingDocuments() {
@@ -2320,35 +2528,128 @@ async function uploadMeetingDocuments() {
         return;
     }
 
-    // Convert files to base64 for local storage
+    const token = localStorage.getItem('token');
+    let successCount = 0;
+    let failCount = 0;
+
+    // Show loading indicator
+    const uploadButton = event.target;
+    const originalText = uploadButton ? uploadButton.textContent : 'Upload';
+    if (uploadButton) {
+        uploadButton.textContent = 'Uploading...';
+        uploadButton.disabled = true;
+    }
+
+    // Convert files to base64 for local storage AND send to backend for ingestion
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const fileData = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(file);
-        });
+        const documentId = Date.now().toString() + i;
 
-        meetingDocuments.push({
-            id: Date.now().toString() + i,
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            data: fileData,
-            uploadedAt: new Date().toISOString(),
-            category: 'Uncategorized'
-        });
+        try {
+            // Read file as text for ingestion
+            const fileText = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+
+            // Also read as base64 for local storage
+            const fileData = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(file);
+            });
+
+            // Store in localStorage
+            meetingDocuments.push({
+                id: documentId,
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                data: fileData,
+                uploadedAt: new Date().toISOString(),
+                category: 'Uncategorized'
+            });
+
+            // Ingest into Pinecone via backend API
+            const ingestResponse = await fetch('/api/company-brain/ingest', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    content: fileText,
+                    metadata: {
+                        title: file.name,
+                        documentId: documentId,
+                        type: 'document',
+                        department: 'general',
+                        tags: ['meeting', 'knowledge-base']
+                    }
+                })
+            });
+
+            if (ingestResponse.ok) {
+                successCount++;
+                console.log(`Document ${file.name} ingested successfully`);
+            } else {
+                failCount++;
+                console.error(`Failed to ingest ${file.name}:`, await ingestResponse.text());
+            }
+
+        } catch (error) {
+            failCount++;
+            console.error(`Error processing ${file.name}:`, error);
+        }
     }
 
     // Save to localStorage
     localStorage.setItem('meetingDocuments', JSON.stringify(meetingDocuments));
 
-    alert(`${files.length} document(s) uploaded successfully!`);
+    // If this upload was for a specific meeting, mark it with the upload date
+    if (currentUploadMeetingId && successCount > 0) {
+        const storedMeetings = localStorage.getItem('meetingsHistory');
+        const meetings = storedMeetings ? JSON.parse(storedMeetings) : [];
+
+        const meetingIndex = meetings.findIndex(m => m.id === currentUploadMeetingId);
+        if (meetingIndex !== -1) {
+            meetings[meetingIndex].documentUploadedDate = new Date().toISOString();
+            localStorage.setItem('meetingsHistory', JSON.stringify(meetings));
+        }
+    }
+
+    // Restore button state
+    if (uploadButton) {
+        uploadButton.textContent = originalText;
+        uploadButton.disabled = false;
+    }
+
+    // Show result
+    if (successCount > 0 && failCount === 0) {
+        if (currentUploadMeetingId) {
+            alert(`${successCount} document(s) uploaded successfully! The meeting has been updated.`);
+        } else {
+            alert(`${successCount} document(s) uploaded and indexed successfully!`);
+        }
+    } else if (successCount > 0) {
+        alert(`${successCount} document(s) uploaded successfully. ${failCount} failed to index (but are still available for basic search).`);
+    } else {
+        alert(`Failed to upload documents. Please try again.`);
+    }
+
     closeMeetingDocUploadModal();
     loadMeetingDocuments();
 
     // Refresh Agent tab if documents were just added
     loadDashboardHighlights();
+
+    // If upload was for a meeting, reload meetings history to show the update
+    if (currentUploadMeetingId) {
+        loadMeetingsHistory();
+        currentUploadMeetingId = null;
+    }
 }
 
 function loadMeetingDocuments() {
@@ -2524,18 +2825,35 @@ function loadMeetingsHistory() {
         const durationText = `${durationMinutes}m ${durationSeconds}s`;
 
         // Unanswered questions section
+        const hasDocumentUploadedForMeeting = meeting.documentUploadedDate;
         const unansweredSection = meeting.unansweredQuestions && meeting.unansweredQuestions.length > 0 ? `
-            <div style="margin-top: 16px; padding: 16px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 8px;">
-                <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #856404; display: flex; align-items: center; gap: 8px;">
-                    <span>⚠️</span>
-                    Unanswered Questions (${meeting.unansweredQuestions.length})
-                </h4>
-                <ul style="margin: 0; padding-left: 20px; color: #856404;">
-                    ${meeting.unansweredQuestions.map(q => `<li style="margin-bottom: 8px;">${q}</li>`).join('')}
-                </ul>
-                <p style="margin: 12px 0 0 0; font-size: 13px; color: #856404;">
-                    💡 Upload relevant documents to help Answerly answer these questions in future meetings.
-                </p>
+            <div style="margin-top: 16px; padding: ${hasDocumentUploadedForMeeting ? '12px 16px' : '16px'}; background: ${hasDocumentUploadedForMeeting ? '#d1fae5' : '#fff3cd'}; border-left: 4px solid ${hasDocumentUploadedForMeeting ? '#10b981' : '#ffc107'}; border-radius: 8px;">
+                ${hasDocumentUploadedForMeeting ? `
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 16px;">✅</span>
+                            <span style="font-size: 13px; color: #065f46; font-weight: 600;">Document uploaded on ${new Date(meeting.documentUploadedDate).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                ` : `
+                    <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #856404; display: flex; align-items: center; gap: 8px;">
+                        <span>⚠️</span>
+                        Unanswered Questions (${meeting.unansweredQuestions.length})
+                    </h4>
+                    <ul style="margin: 0 0 12px 0; padding-left: 20px; color: #856404;">
+                        ${meeting.unansweredQuestions.map(q => `<li style="margin-bottom: 8px;">${q}</li>`).join('')}
+                    </ul>
+                    <p style="margin: 0 0 12px 0; font-size: 13px; color: #856404;">
+                        💡 Upload relevant documents to help Answerly answer these questions in future meetings.
+                    </p>
+                    <button
+                        onclick="uploadDocumentForMeeting('${meeting.id}')"
+                        style="background: #ffc107; color: #856404; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;"
+                        onmouseover="this.style.background='#ffb300'"
+                        onmouseout="this.style.background='#ffc107'">
+                        📤 Upload Document
+                    </button>
+                `}
             </div>
         ` : '';
 
@@ -2589,8 +2907,8 @@ function showAnswerlyModal() {
     answerlyStartTime = Date.now();
     answerlyTimerInterval = setInterval(updateAnswerlyTimer, 1000);
 
-    // Start listening (if speech recognition is available)
-    startAnswerlyListening();
+    // Use the main Answerly function (no duplicate speech recognition)
+    startAnswerly();
 }
 
 function closeAnswerlyPopup() {
@@ -2694,69 +3012,9 @@ function updateAnswerlyTimer() {
 }
 
 function startAnswerlyListening() {
-    // Initialize speech recognition if available
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US';
-
-        recognition.onresult = (event) => {
-            let transcript = '';
-            let isFinal = false;
-
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                transcript += event.results[i][0].transcript;
-                if (event.results[i].isFinal) {
-                    isFinal = true;
-                }
-            }
-
-            // Update conversation display
-            const conversationDiv = document.getElementById('answerly-popup-conversation');
-            if (conversationDiv) {
-                conversationDiv.innerHTML = `<p>${transcript}</p>`;
-            }
-
-            console.log('Speech recognized:', transcript, 'Final:', isFinal);
-
-            // Only process final results to avoid duplicates
-            if (isFinal) {
-                // Detect questions and search for answers
-                const hasQuestionMark = transcript.includes('?');
-                const hasQuestionWord = /\b(how|what|when|where|why|who|can|could|would|should|will|is|are|does|do|did)\b/i.test(transcript);
-
-                console.log('Question detected:', hasQuestionMark || hasQuestionWord);
-
-                if ((hasQuestionMark || hasQuestionWord) && transcript.trim().length > 10) {
-                    // Extract the actual question (split on periods if there are multiple sentences)
-                    const sentences = transcript.split(/\.\s+/);
-                    for (const sentence of sentences) {
-                        if (sentence.includes('?') || /\b(how|what|when|where|why|who|can|could|would|should|will|is|are|does|do|did)\b/i.test(sentence)) {
-                            const question = sentence.trim();
-                            if (question.length > 10) {
-                                console.log('Processing question:', question);
-                                searchAnswerlyDocuments(question);
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        recognition.onerror = (event) => {
-            console.error('Speech recognition error:', event.error);
-        };
-
-        recognition.start();
-        window.answerlyRecognition = recognition;
-    } else {
-        console.warn('Speech recognition not supported in this browser');
-        const conversationDiv = document.getElementById('answerly-popup-conversation');
-        conversationDiv.innerHTML = `<p style="color: #ef4444;">Speech recognition is not supported in your browser. Please use Chrome or Edge.</p>`;
-    }
+    // This function is now deprecated - use startAnswerly() instead
+    // Keeping this for backward compatibility but it does nothing
+    console.warn('startAnswerlyListening() is deprecated. Use startAnswerly() instead.');
 }
 
 function stopAnswerlyListening() {
