@@ -202,12 +202,15 @@ class AuthService {
       throw new Error('Token expired');
     }
 
-    const user = await User.findById(session.userId);
+    // Get user from Map storage (not MongoDB)
+    const user = this.users.get(session.userId);
     if (!user) {
       throw new Error('User not found');
     }
 
-    return user.toSafeObject();
+    // Return safe user object (without password hash)
+    const { passwordHash, ...safeUser } = user;
+    return safeUser;
   }
 
   /**

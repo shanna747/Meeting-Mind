@@ -1,4 +1,5 @@
 // Page navigation
+console.log('🔥 APP.JS LOADED - VERSION 20251028-v2 🔥');
 let currentUser = null;
 let selectedSubscription = 'free';
 
@@ -1319,12 +1320,15 @@ async function startAnswerly() {
                 transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
             }
 
-            // Update live transcript in popup
+            // Update live transcript in popup (only the live transcript part, preserve Q&A)
             const popupConversationDiv = document.getElementById('answerly-popup-conversation');
+            console.log('Popup conversation div:', popupConversationDiv ? 'Found' : 'Not found');
+
             if (popupConversationDiv) {
                 // Check if live transcript element exists
                 let liveTranscriptEl = popupConversationDiv.querySelector('.live-transcript');
                 if (!liveTranscriptEl) {
+                    console.log('Creating new live transcript element in popup');
                     // Create live transcript element at the top
                     liveTranscriptEl = document.createElement('div');
                     liveTranscriptEl.className = 'live-transcript';
@@ -1332,10 +1336,17 @@ async function startAnswerly() {
                     popupConversationDiv.insertBefore(liveTranscriptEl, popupConversationDiv.firstChild);
                 }
                 liveTranscriptEl.textContent = transcript || 'Listening to your conversation...';
+                console.log('Updated popup transcript:', transcript.substring(0, 50) + '...');
+            } else {
+                console.warn('answerly-popup-conversation element not found!');
             }
 
             // Check for questions and generate answers
-            if (event.results[event.results.length - 1].isFinal) {
+            const isFinal = event.results[event.results.length - 1].isFinal;
+            console.log('Speech result:', { transcript, isFinal });
+
+            if (isFinal) {
+                console.log('Final transcript received:', transcript);
                 meetingTranscript += ' ' + transcript;
                 detectAndAnswerQuestions(transcript);
             }
@@ -1343,9 +1354,44 @@ async function startAnswerly() {
 
         recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
+
+            // Provide user-friendly error messages
+            if (event.error === 'not-allowed') {
+                alert('Microphone access was denied. Please allow microphone access in your browser settings and try again.');
+                stopAnswerly();
+            } else if (event.error === 'no-speech') {
+                console.log('No speech detected, continuing to listen...');
+                // This is normal, recognition continues
+            } else if (event.error === 'network') {
+                console.error('Network error occurred during speech recognition');
+            } else if (event.error === 'aborted') {
+                console.log('Speech recognition was aborted');
+            } else {
+                console.log('Other speech recognition error:', event.error);
+            }
         };
 
-        recognition.start();
+        recognition.onend = () => {
+            console.log('Speech recognition ended');
+            // Auto-restart if Answerly is still active
+            if (answerlyActive && recognition) {
+                console.log('Auto-restarting speech recognition...');
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.error('Failed to restart recognition:', error);
+                }
+            }
+        };
+
+        try {
+            recognition.start();
+            console.log('Speech recognition started - microphone permission should be requested');
+        } catch (error) {
+            console.error('Failed to start speech recognition:', error);
+            alert('Failed to start speech recognition. Please make sure you are using Chrome or Edge browser.');
+            stopAnswerly();
+        }
     } else {
         alert('Speech recognition is not supported in your browser. Please use Chrome or Edge.');
         stopAnswerly();
@@ -1429,7 +1475,7 @@ async function stopAnswerly() {
 }
 
 async function detectAndAnswerQuestions(text) {
-    console.log('🔍 detectAndAnswerQuestions called with:', text);
+    console.log('detectAndAnswerQuestions called with:', text);
 
     // Comprehensive question detection - trigger on question words and patterns
     const questionWords = [
@@ -1439,21 +1485,8 @@ async function detectAndAnswerQuestions(text) {
         'which', 'whose', 'whom'
     ];
 
-    // Split by punctuation AND by common conjunctions/transitions to catch questions mid-sentence
-    // First split by punctuation, then further split each part by conjunctions
-    const initialSplit = text.toLowerCase().split(/[.!?]+/);
-    const sentences = [];
-
-    console.log('📝 Initial split by punctuation:', initialSplit);
-
-    for (const part of initialSplit) {
-        // Split by conjunctions like "and", "but", "so", "right", "okay", etc.
-        const subParts = part.split(/\b(?:and|but|so|okay|ok|right|well|um|uh|now|then)\b/);
-        console.log(`📝 Split "${part}" into:`, subParts);
-        sentences.push(...subParts);
-    }
-
-    console.log('📝 Final sentences:', sentences);
+    const sentences = text.toLowerCase().split(/[.!?]+/);
+    console.log('Split into sentences:', sentences);
 
     for (const sentence of sentences) {
         const trimmedSentence = sentence.trim();
@@ -1473,7 +1506,7 @@ async function detectAndAnswerQuestions(text) {
         // Consider it a question if it meets any criteria and is substantial
         const isQuestion = (startsWithQuestionWord || hasQuestionMark || hasAuxiliaryPattern) && trimmedSentence.length > 5;
 
-        console.log('❓ Question check:', {
+        console.log('Question check:', {
             sentence: trimmedSentence,
             startsWithQuestionWord,
             hasQuestionMark,
@@ -1488,11 +1521,11 @@ async function detectAndAnswerQuestions(text) {
             );
 
             if (!alreadyAsked) {
-                console.log('Detected question:', trimmedSentence);
+                console.log('✅ Detected question:', trimmedSentence);
                 // Generate answer from knowledge base
                 await generateAnswer(trimmedSentence);
             } else {
-                console.log('Question already asked, skipping:', trimmedSentence);
+                console.log('⚠️ Question already asked, skipping:', trimmedSentence);
             }
         }
     }
@@ -1500,11 +1533,14 @@ async function detectAndAnswerQuestions(text) {
 
 async function generateAnswer(question) {
     const responsesDiv = document.getElementById('answerly-responses');
-    const popupBody = document.getElementById('answerly-popup-body');
+    const popupConversation = document.getElementById('answerly-popup-conversation');
+
+    console.log('generateAnswer called for:', question);
+    console.log('popupConversation element:', popupConversation ? 'Found' : 'NOT FOUND');
 
     // Clear initial text in popup
-    if (popupBody && popupBody.querySelector('.conversation-flow-text')) {
-        popupBody.innerHTML = '';
+    if (popupConversation && popupConversation.querySelector('.conversation-flow-text')) {
+        popupConversation.innerHTML = '';
     }
 
     // Clear "No questions" message if present in modal
@@ -1535,14 +1571,24 @@ async function generateAnswer(question) {
 
     // Add question to popup
     let popupQA = null;
-    if (popupBody) {
+    if (popupConversation) {
+        // Remove live transcript element if it exists (we're now showing Q&A)
+        const liveTranscript = popupConversation.querySelector('.live-transcript');
+        if (liveTranscript) {
+            liveTranscript.remove();
+        }
+
         popupQA = document.createElement('div');
         popupQA.className = 'popup-qa-item';
+        popupQA.style.cssText = 'margin-bottom: 12px; padding: 12px; background: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 4px;';
         popupQA.innerHTML = `
-            <div class="popup-question">❓ ${question}</div>
-            <div class="popup-answer">💭 Searching...</div>
+            <div style="font-weight: 600; color: #1e40af; margin-bottom: 4px;">❓ ${question}</div>
+            <div style="color: #475569;">💭 Searching...</div>
         `;
-        popupBody.insertBefore(popupQA, popupBody.firstChild);
+        popupConversation.insertBefore(popupQA, popupConversation.firstChild);
+        console.log('Added Q&A to popup');
+    } else {
+        console.warn('popupConversation element not found!');
     }
 
     // Generate answer from knowledge base
@@ -1570,14 +1616,15 @@ async function generateAnswer(question) {
         // Update popup
         if (popupQA) {
             popupQA.innerHTML = `
-                <div class="popup-question">${answered ? '✅' : '❌'} ${question}</div>
-                <div class="popup-answer">${answered ? answer : '<strong style="color: #dc3545;">Not found</strong> - ' + answer}</div>
+                <div style="font-weight: 600; color: ${answered ? '#1e40af' : '#dc3545'}; margin-bottom: 4px;">${answered ? '✅' : '❌'} ${question}</div>
+                <div style="color: #475569; font-size: 14px; line-height: 1.6;">${answered ? answer : '<strong style="color: #dc3545;">Not found</strong> - ' + answer}</div>
             `;
+            console.log('Updated popup Q&A with answer');
         }
 
         // Auto-scroll popup to top
-        if (popupBody) {
-            popupBody.scrollTop = 0;
+        if (popupConversation) {
+            popupConversation.scrollTop = 0;
         }
 
         // Save question to meeting notes
@@ -1904,7 +1951,6 @@ async function simulateAIAnswer(question) {
         const token = localStorage.getItem('token');
 
         console.log('Querying backend API for question:', question);
-        console.log('📡 Sending API request to /api/company-brain/query');
 
         const response = await fetch('/api/company-brain/query', {
             method: 'POST',
@@ -1921,18 +1967,15 @@ async function simulateAIAnswer(question) {
             })
         });
 
-        console.log('📡 API response status:', response.status, response.statusText);
-
         if (!response.ok) {
-            console.error('❌ API error:', response.status, response.statusText);
-            console.log('⚠️ Falling back to keyword search...');
+            console.error('API error:', response.status, response.statusText);
             // Fallback to basic search if API fails
             return await fallbackKeywordSearch(question, documents);
         }
 
         const data = await response.json();
 
-        console.log('✅ API response data:', data);
+        console.log('API response:', data);
 
         if (data.answer && data.sources && data.sources.length > 0) {
             // Format answer with source information
@@ -1945,76 +1988,64 @@ async function simulateAIAnswer(question) {
         }
 
     } catch (error) {
-        console.error('❌ Error querying knowledge base:', error);
-        console.log('⚠️ Exception caught, falling back to keyword search...');
+        console.error('Error querying knowledge base:', error);
 
         // Fallback to basic search
         const storedDocs = localStorage.getItem('meetingDocuments');
         const documents = storedDocs ? JSON.parse(storedDocs) : [];
 
-        console.log('📚 Found', documents.length, 'documents in localStorage');
-
         if (documents.length > 0) {
-            console.log('🔍 Starting fallback keyword search...');
             const answer = await fallbackKeywordSearch(question, documents);
-            console.log('✅ Fallback search returned:', answer ? answer.substring(0, 100) : 'null/undefined');
+            console.log('Fallback search returned:', answer ? answer.substring(0, 100) : 'null/undefined');
             return answer;
         }
 
-        console.log('❌ No documents available for fallback search');
         return "Sorry, I encountered an error while searching your knowledge base. Please make sure you have uploaded documents.";
     }
 }
 
 // Fallback keyword search when API is unavailable
-async function fallbackKeywordSearch(question, documents) {
-    console.log('🔍 === FALLBACK KEYWORD SEARCH STARTED ===');
-    console.log('📝 Question:', question);
-    console.log('📚 Number of documents:', documents.length);
-
-    const questionLower = question.toLowerCase();
-
-    // Extract keywords - keep numbers and meaningful words
-    const stopWords = ['a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or', 'but'];
-
-    // Extract ALL words from the question - match every single word
-    const allTokens = questionLower.match(/\w+|[+\-*/=]/g) || [];
-
-    // Keep ALL words - no filtering by length or stop words
-    // This ensures every word in the question is matched against documents
-    const keywords = allTokens.filter(token => token.length > 0);
-
-    // If no keywords found, use the whole question
-    if (keywords.length === 0) {
-        keywords.push(questionLower.trim());
     }
 
-    console.log('🔑 Fallback search - keywords:', keywords);
-    console.log('🎯 Searching for question:', questionLower);
+    console.log(`Best article match score: ${bestScore}`);
 
-    let bestMatch = null;
+    // Return if we found a good match (minimum score 20)
+    if (bestSentences.length > 0 && bestScore >= 20) {
+        return bestSentences.join(' ').substring(0, 400);
+    }
+
+    return null;
+}
+
+// Main function: Replace the existing fallbackKeywordSearch function with this
+async function fallbackKeywordSearch(question, documents) {
+    const questionLower = question.toLowerCase();
+
+    // Extract meaningful keywords
+    const stopWords = ['a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or', 'but', 'i', 'you', 'we', 'they', 'it', 'this', 'that', 'my', 'your'];
+    const allTokens = questionLower.match(/\w+|[+\-*/=]/g) || [];
+    const keywords = allTokens.filter(token =>
+        token.length > 2 && !stopWords.includes(token)
+    );
+
+    if (keywords.length === 0) {
+        keywords.push(...allTokens.filter(t => t.length > 0));
+    }
+
+    console.log('Fallback search - keywords:', keywords);
+
+    let bestResult = null;
     let bestScore = 0;
 
     for (const doc of documents) {
         try {
             let content = '';
 
-            if (doc.type === 'text/plain' || doc.type === 'application/json' ||
-                doc.type === 'text/markdown' || doc.type === 'text/html' ||
-                doc.type === 'text/csv' || doc.name.endsWith('.csv') ||
-                doc.name.endsWith('.txt')) {
+            // Extract document content (keeping existing extraction logic)
+            if (doc.type === 'text/plain' || doc.name.endsWith('.txt')) {
                 const base64Data = doc.data.split(',')[1];
                 content = atob(base64Data);
-            } else if (doc.type === 'application/pdf') {
-                const base64Data = doc.data.split(',')[1];
-                const binaryString = atob(base64Data);
-                content = binaryString.replace(/[^\x20-\x7E\n]/g, ' ');
-            } else if (doc.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-                       doc.name.endsWith('.docx')) {
-                // .docx files - use mammoth.js to properly extract text
-                console.log('Processing .docx file:', doc.name);
-
-                // Convert base64 to ArrayBuffer for mammoth.js
+            } else if (doc.name.endsWith('.docx')) {
                 const base64Data = doc.data.split(',')[1];
                 const binaryString = atob(base64Data);
                 const bytes = new Uint8Array(binaryString.length);
@@ -2022,184 +2053,58 @@ async function fallbackKeywordSearch(question, documents) {
                     bytes[i] = binaryString.charCodeAt(i);
                 }
 
-                try {
-                    // Use mammoth.js to extract text from .docx
-                    if (typeof mammoth !== 'undefined') {
-                        const result = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
-                        content = result.value;
-                        console.log('Extracted text from .docx using mammoth.js');
-                    } else {
-                        console.warn('mammoth.js not loaded, skipping .docx file');
-                        continue;
-                    }
-                } catch (error) {
-                    console.error('Error extracting .docx content:', error);
+                if (typeof mammoth !== 'undefined') {
+                    const result = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
+                    content = result.value;
+                } else {
                     continue;
                 }
-            } else if (doc.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
-                       doc.type === 'application/vnd.ms-powerpoint' ||
-                       doc.name.endsWith('.pptx') || doc.name.endsWith('.ppt')) {
-                // PowerPoint files - extract text (basic extraction)
-                console.log('Processing PowerPoint file:', doc.name);
-                const base64Data = doc.data.split(',')[1];
-                const binaryString = atob(base64Data);
-                // Extract readable text from the binary content
-                content = binaryString.replace(/[^\x20-\x7E\n]/g, ' ')
-                    .replace(/<[^>]*>/g, ' ') // Remove XML tags
-                    .replace(/\s+/g, ' ') // Normalize whitespace
-                    .trim();
-                console.log('Extracted text from PowerPoint file');
             } else {
-                console.log('Skipping unsupported document type:', doc.type, doc.name);
                 continue;
             }
 
-            console.log(`Searching in document: ${doc.name} (${content.length} chars)`);
-            console.log('Content preview:', content.substring(0, 200));
+            if (!content || content.length < 20) continue;
 
-            if (content) {
-                const contentLower = content.toLowerCase();
-                let score = 0;
-                let matchedKeywords = [];
+            // Detect document type
+            const docType = detectDocumentType(content);
+            console.log(`Document "${doc.name}" detected as: ${docType}`);
 
-                // First, check if the exact question or similar phrase exists
-                if (contentLower.includes(questionLower)) {
-                    score += 100; // High score for exact question match
-                    matchedKeywords.push('exact match');
-                    console.log('Found exact question match!');
-                }
+            // Use appropriate search strategy
+            let answer = null;
+            if (docType === 'faq') {
+                answer = searchFAQDocument(question, content, keywords);
+            } else {
+                answer = searchArticleDocument(question, content, keywords);
+            }
 
-                // Also search for individual keywords
-                keywords.forEach(keyword => {
-                    // Escape special regex characters in keyword
-                    const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-                    const exactMatches = (contentLower.match(new RegExp(`\\b${escapedKeyword}\\b`, 'g')) || []).length;
-                    const partialMatches = (contentLower.match(new RegExp(escapedKeyword, 'g')) || []).length;
-
-                    if (exactMatches > 0) {
-                        score += exactMatches * 3;
-                        matchedKeywords.push(keyword);
-                        console.log(`Found exact matches for "${keyword}":`, exactMatches);
-                    } else if (partialMatches > 0) {
-                        score += partialMatches;
-                        matchedKeywords.push(keyword);
-                        console.log(`Found partial matches for "${keyword}":`, partialMatches);
-                    }
+            if (answer) {
+                // Score based on answer quality
+                let score = answer.length > 20 ? 50 : 20;
+                keywords.forEach(k => {
+                    if (answer.toLowerCase().includes(k)) score += 10;
                 });
-
-                console.log(`Document ${doc.name} score: ${score}, matched keywords:`, matchedKeywords);
 
                 if (score > bestScore) {
                     bestScore = score;
-                    bestMatch = { doc, content, score, matchedKeywords };
+                    bestResult = { doc, answer, docType };
                 }
             }
+
         } catch (err) {
-            console.error('Error reading document:', doc.name, err);
+            console.error('Error processing document:', doc.name, err);
         }
     }
 
-    console.log('Best match:', bestMatch ? bestMatch.doc.name : 'none', 'Score:', bestScore);
+    console.log('Best result score:', bestScore);
 
-    if (bestMatch && bestMatch.score > 0) {
-        const content = bestMatch.content;
-        const contentLower = content.toLowerCase();
-
-        console.log('🔍 Processing best match document:', bestMatch.doc.name);
-        console.log('📄 Document content length:', content.length);
-        console.log('🎯 Search question:', questionLower);
-
-        // Try to find the question in the document and extract the answer
-        const questionIndex = contentLower.indexOf(questionLower);
-        console.log('📍 Question index in document:', questionIndex);
-
-        if (questionIndex !== -1) {
-            // Found the exact question - now find where it ends
-            const afterQuestionStart = content.substring(questionIndex);
-            console.log('➡️ Text after question starts with:', afterQuestionStart.substring(0, 100));
-
-            // Find the end of the question (look for ?, :, or newline)
-            const questionEndMatch = afterQuestionStart.match(/[\?\:]/);
-
-            if (questionEndMatch) {
-                console.log('❓ Question ends at character:', questionEndMatch.index);
-                // Skip past the question mark/colon and any whitespace
-                const answerStartIndex = questionIndex + questionEndMatch.index + 1;
-                const afterAnswer = content.substring(answerStartIndex).trim();
-                console.log('💡 Answer text candidate:', afterAnswer.substring(0, 150));
-
-                // Extract the answer - take text until we hit another question or significant break
-                // Split by: single question mark OR double newlines OR "How do" (next question starting)
-                const answerText = afterAnswer.split(/\?|(?:\n\s*){2,}|(?=\bHow\s+do\s+I\b)/i)[0].trim();
-
-                // Clean up the answer - remove extra whitespace
-                const cleanAnswer = answerText.replace(/\s+/g, ' ').trim();
-                console.log('✅ Cleaned answer:', cleanAnswer.substring(0, 150));
-                console.log('📏 Answer length:', cleanAnswer.length);
-
-                if (cleanAnswer && cleanAnswer.length > 0 && cleanAnswer.length < 500) {
-                    console.log('✅ Returning answer from exact question match');
-                    return `Based on "${bestMatch.doc.name}":\n\n${cleanAnswer}`;
-                } else {
-                    console.log('❌ Answer failed validation (empty or too long)');
-                }
-            } else {
-                console.log('❌ No question end marker found (?, :)');
-            }
-
-            // Fallback: take text after the question
-            console.log('⚠️ Trying fallback: text after question');
-            const afterQuestion = content.substring(questionIndex + questionLower.length).trim();
-            const nextSentences = afterQuestion.substring(0, 200).split(/[\.\!\?]/)[0];
-            if (nextSentences && nextSentences.length > 0) {
-                console.log('✅ Returning fallback answer:', nextSentences.substring(0, 100));
-                return `Based on "${bestMatch.doc.name}":\n\n${nextSentences.trim()}`;
-            }
-        } else {
-            console.log('⚠️ Question not found in document (exact match), trying keyword search');
-        }
-
-        // Fallback: use keyword-based extraction but with smaller window
-        const keyword = bestMatch.matchedKeywords[0];
-        console.log('🔑 Using keyword for extraction:', keyword);
-        const index = contentLower.indexOf(keyword);
-
-        if (index !== -1) {
-            console.log('📍 Keyword found at index:', index);
-            // Find sentence boundaries around the keyword
-            const start = Math.max(0, index - 100);
-            const end = Math.min(content.length, index + 200);
-            let snippet = content.substring(start, end).trim();
-
-            // Try to extract just the sentence containing the keyword
-            const sentences = snippet.split(/[\.\!\?]/);
-            console.log('📝 Sentences containing keyword:', sentences.length);
-            for (const sentence of sentences) {
-                if (sentence.toLowerCase().includes(keyword)) {
-                    console.log('✅ Returning sentence with keyword:', sentence.substring(0, 100));
-                    return `Based on "${bestMatch.doc.name}":\n\n${sentence.trim()}`;
-                }
-            }
-
-            if (start > 0) snippet = '...' + snippet;
-            if (end < content.length) snippet = snippet + '...';
-
-            console.log('✅ Returning snippet around keyword');
-            return `Based on "${bestMatch.doc.name}":\n\n${snippet}`;
-        } else {
-            console.log('❌ Keyword not found in document');
-        }
-
-        console.log('⚠️ Using document preview as last resort');
-        return `Based on "${bestMatch.doc.name}":\n\n${content.substring(0, 300)}...`;
+    // Require minimum score of 40 for relevance
+    if (bestResult && bestScore >= 40) {
+        return `Based on "${bestResult.doc.name}":\n\n${bestResult.answer}`;
     }
 
-    console.log('❌ No match found in any document');
+    console.log('No relevant answer found');
     return "Answer not available";
 }
-
-// Meeting Timer Functions
 function startMeetingTimer() {
     // Get subscription limits
     const subscription = currentUser?.subscription || 'free';
@@ -2959,7 +2864,7 @@ function loadMeetingsHistory() {
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px;">
-                    <div onclick="toggleAnsweredQuestions('${meeting.id}')" style="text-align: center; padding: 12px; background: #f8f9fa; border-radius: 8px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#e9ecef'" onmouseout="this.style.background='#f8f9fa'">
+                    <div style="text-align: center; padding: 12px; background: #f8f9fa; border-radius: 8px;">
                         <div style="font-size: 24px; font-weight: bold; color: var(--primary-color);">${meeting.questionsAnswered || 0}</div>
                         <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Questions Answered</div>
                     </div>
@@ -2967,52 +2872,10 @@ function loadMeetingsHistory() {
                         <div style="font-size: 24px; font-weight: bold; color: #10b981;">${meeting.documentsReferenced || 0}</div>
                         <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Documents Referenced</div>
                     </div>
-                    <div onclick="toggleUnansweredQuestions('${meeting.id}')" style="text-align: center; padding: 12px; background: #f8f9fa; border-radius: 8px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#e9ecef'" onmouseout="this.style.background='#f8f9fa'">
+                    <div style="text-align: center; padding: 12px; background: #f8f9fa; border-radius: 8px;">
                         <div style="font-size: 24px; font-weight: bold; color: #f59e0b;">${meeting.unansweredQuestions ? meeting.unansweredQuestions.length : 0}</div>
                         <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Unanswered</div>
                     </div>
-                </div>
-
-                <!-- Answered Questions List (Initially Hidden) -->
-                <div id="answered-questions-${meeting.id}" style="display: none; margin-top: 16px; padding: 16px; background: #f0f9ff; border-left: 4px solid #3b82f6; border-radius: 8px;">
-                    <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #1e40af; display: flex; align-items: center; gap: 8px;">
-                        <span>✅</span>
-                        Answered Questions (${meeting.questionsAnswered || 0})
-                    </h4>
-                    ${meeting.answeredQuestions && meeting.answeredQuestions.length > 0 ? `
-                        <div style="max-height: 300px; overflow-y: auto;">
-                            ${meeting.answeredQuestions.map(qa => `
-                                <div style="margin-bottom: 16px; padding: 12px; background: white; border-radius: 6px;">
-                                    <div style="font-weight: 600; color: #1e40af; margin-bottom: 8px;">Q: ${qa.question}</div>
-                                    <div style="color: #374151; font-size: 13px; line-height: 1.6;">A: ${qa.answer || 'Answer not available'}</div>
-                                    ${qa.sourceDocument ? `<div style="margin-top: 8px; font-size: 12px; color: #6b7280;">📄 Source: ${qa.sourceDocument}</div>` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : '<p style="margin: 0; color: #6b7280; font-size: 13px;">No answered questions recorded.</p>'}
-                </div>
-
-                <!-- Unanswered Questions List (Initially Hidden) -->
-                <div id="unanswered-questions-${meeting.id}" style="display: none; margin-top: 16px; padding: 16px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px;">
-                    <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #92400e; display: flex; align-items: center; gap: 8px;">
-                        <span>❓</span>
-                        Unanswered Questions (${meeting.unansweredQuestions ? meeting.unansweredQuestions.length : 0})
-                    </h4>
-                    ${meeting.unansweredQuestions && meeting.unansweredQuestions.length > 0 ? `
-                        <ul style="margin: 0 0 12px 0; padding-left: 20px; color: #92400e;">
-                            ${meeting.unansweredQuestions.map(q => `<li style="margin-bottom: 8px;">${q}</li>`).join('')}
-                        </ul>
-                        <p style="margin: 0 0 12px 0; font-size: 13px; color: #92400e;">
-                            💡 Upload relevant documents to help Answerly answer these questions in future meetings.
-                        </p>
-                        <button
-                            onclick="event.stopPropagation(); uploadDocumentForMeeting('${meeting.id}')"
-                            style="background: #fbbf24; color: #92400e; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;"
-                            onmouseover="this.style.background='#f59e0b'"
-                            onmouseout="this.style.background='#fbbf24'">
-                            📤 Upload Document
-                        </button>
-                    ` : '<p style="margin: 0; color: #6b7280; font-size: 13px;">All questions were answered!</p>'}
                 </div>
 
                 ${unansweredSection}
@@ -3021,39 +2884,23 @@ function loadMeetingsHistory() {
     }).join('');
 }
 
-// Toggle answered questions visibility
-function toggleAnsweredQuestions(meetingId) {
-    const answeredDiv = document.getElementById(`answered-questions-${meetingId}`);
-    const unansweredDiv = document.getElementById(`unanswered-questions-${meetingId}`);
-
-    if (answeredDiv.style.display === 'none') {
-        answeredDiv.style.display = 'block';
-        // Hide unanswered if it's open
-        if (unansweredDiv) unansweredDiv.style.display = 'none';
-    } else {
-        answeredDiv.style.display = 'none';
-    }
-}
-
-// Toggle unanswered questions visibility
-function toggleUnansweredQuestions(meetingId) {
-    const unansweredDiv = document.getElementById(`unanswered-questions-${meetingId}`);
-    const answeredDiv = document.getElementById(`answered-questions-${meetingId}`);
-
-    if (unansweredDiv.style.display === 'none') {
-        unansweredDiv.style.display = 'block';
-        // Hide answered if it's open
-        if (answeredDiv) answeredDiv.style.display = 'none';
-    } else {
-        unansweredDiv.style.display = 'none';
-    }
-}
-
 // Answerly Popup Functions
 function showAnswerlyModal() {
+    console.log('showAnswerlyModal called');
+
     // Show the popup in bottom right corner
     const popup = document.getElementById('answerly-listening-popup');
     popup.style.display = 'block';
+    console.log('Popup display set to block');
+
+    // Clear the initial placeholder message in popup and add initial state
+    const popupConversationDiv = document.getElementById('answerly-popup-conversation');
+    if (popupConversationDiv) {
+        popupConversationDiv.innerHTML = '<div class="live-transcript" style="padding: 12px; background: #f8fafc; border-left: 3px solid #10b981; border-radius: 4px; margin-bottom: 12px; font-style: italic; color: #666;">Waiting for speech...</div>';
+        console.log('Popup conversation div initialized');
+    } else {
+        console.error('answerly-popup-conversation not found!');
+    }
 
     // Start the timer
     answerlyStartTime = Date.now();
@@ -3082,7 +2929,16 @@ function closeAnswerlyPopup() {
     }
 
     // Reset timer display
-    document.getElementById('answerly-timer').textContent = '00:00';
+    const timerEl = document.getElementById('answerly-timer');
+    if (timerEl) {
+        timerEl.textContent = '00:00';
+    }
+
+    // Reset popup conversation display
+    const popupConversationDiv = document.getElementById('answerly-popup-conversation');
+    if (popupConversationDiv) {
+        popupConversationDiv.innerHTML = '<p style="font-style: italic; color: #999;">Listening to your conversation...</p>';
+    }
 
     // Reset meeting data
     answerlyStartTime = null;
@@ -3124,11 +2980,6 @@ function saveMeetingHistory(duration) {
         questionsAnswered: answeredQuestions.length,
         totalQuestions: meetingQuestions.length,
         documentsReferenced: documentsReferenced.size,
-        answeredQuestions: answeredQuestions.map(q => ({
-            question: q.question,
-            answer: q.answer,
-            sourceDocument: q.answer.match(/Based on "([^"]+)"/)?.[1] || null
-        })),
         unansweredQuestions: unansweredQuestions
     };
 
@@ -3227,13 +3078,25 @@ async function searchAnswerlyDocuments(question) {
 
 function displayAnswerlyResponse(question, answer) {
     const conversationDiv = document.getElementById('answerly-popup-conversation');
-    const responseHtml = `
-        <div style="margin-bottom: 16px; padding: 12px; background: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 4px;">
-            <div style="font-weight: 600; color: #1e40af; margin-bottom: 4px;">Q: ${question}</div>
-            <div style="color: #475569;">A: ${answer}</div>
-        </div>
+    if (!conversationDiv) return;
+
+    // Create Q&A element
+    const qaDiv = document.createElement('div');
+    qaDiv.style.cssText = 'margin-bottom: 16px; padding: 12px; background: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 4px;';
+    qaDiv.innerHTML = `
+        <div style="font-weight: 600; color: #1e40af; margin-bottom: 4px;">Q: ${question}</div>
+        <div style="color: #475569;">A: ${answer}</div>
     `;
-    conversationDiv.innerHTML = responseHtml + conversationDiv.innerHTML;
+
+    // Insert after live transcript (if it exists) or at the beginning
+    const liveTranscriptEl = conversationDiv.querySelector('.live-transcript');
+    if (liveTranscriptEl) {
+        // Insert right after live transcript
+        liveTranscriptEl.parentNode.insertBefore(qaDiv, liveTranscriptEl.nextSibling);
+    } else {
+        // Insert at the beginning
+        conversationDiv.insertBefore(qaDiv, conversationDiv.firstChild);
+    }
 }
 
 // Onboarding card toggle functions

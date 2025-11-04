@@ -22,6 +22,7 @@ const integrationsRouter = require('./routes/integrations');
 const authRouter = require('./routes/auth');
 const datasourcesRouter = require('./routes/datasources');
 const brainRouter = require('./routes/brain');
+const meetingNotesRouter = require('./routes/meetingNotes');
 const subscriptionEnforcer = require('./services/subscriptionEnforcer');
 
 const app = express();
@@ -64,6 +65,7 @@ app.use('/api/company-brain', companyBrainRouter);
 app.use('/api/integrations', integrationsRouter);
 app.use('/api/datasources', datasourcesRouter);
 app.use('/api/brain', brainRouter);
+app.use('/api/meeting-notes', meetingNotesRouter);
 
 // WebSocket connection handling
 wss.on('connection', (ws) => {

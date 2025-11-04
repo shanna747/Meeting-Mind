@@ -1,4 +1,5 @@
 // Page navigation
+console.log('🔥 APP.JS LOADED - VERSION 20251028-v2 🔥');
 let currentUser = null;
 let selectedSubscription = 'free';
 
@@ -1312,13 +1313,40 @@ async function startAnswerly() {
                 transcript += event.results[i][0].transcript;
             }
 
-            // Update live transcript
+            // Update live transcript in modal
             const transcriptDiv = document.getElementById('live-transcript');
-            transcriptDiv.textContent = transcript || 'Listening...';
-            transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+            if (transcriptDiv) {
+                transcriptDiv.textContent = transcript || 'Listening...';
+                transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+            }
+
+            // Update live transcript in popup (only the live transcript part, preserve Q&A)
+            const popupConversationDiv = document.getElementById('answerly-popup-conversation');
+            console.log('Popup conversation div:', popupConversationDiv ? 'Found' : 'Not found');
+
+            if (popupConversationDiv) {
+                // Check if live transcript element exists
+                let liveTranscriptEl = popupConversationDiv.querySelector('.live-transcript');
+                if (!liveTranscriptEl) {
+                    console.log('Creating new live transcript element in popup');
+                    // Create live transcript element at the top
+                    liveTranscriptEl = document.createElement('div');
+                    liveTranscriptEl.className = 'live-transcript';
+                    liveTranscriptEl.style.cssText = 'padding: 12px; background: #f8fafc; border-left: 3px solid #10b981; border-radius: 4px; margin-bottom: 12px; font-style: italic; color: #666;';
+                    popupConversationDiv.insertBefore(liveTranscriptEl, popupConversationDiv.firstChild);
+                }
+                liveTranscriptEl.textContent = transcript || 'Listening to your conversation...';
+                console.log('Updated popup transcript:', transcript.substring(0, 50) + '...');
+            } else {
+                console.warn('answerly-popup-conversation element not found!');
+            }
 
             // Check for questions and generate answers
-            if (event.results[event.results.length - 1].isFinal) {
+            const isFinal = event.results[event.results.length - 1].isFinal;
+            console.log('Speech result:', { transcript, isFinal });
+
+            if (isFinal) {
+                console.log('Final transcript received:', transcript);
                 meetingTranscript += ' ' + transcript;
                 detectAndAnswerQuestions(transcript);
             }
@@ -1326,9 +1354,44 @@ async function startAnswerly() {
 
         recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
+
+            // Provide user-friendly error messages
+            if (event.error === 'not-allowed') {
+                alert('Microphone access was denied. Please allow microphone access in your browser settings and try again.');
+                stopAnswerly();
+            } else if (event.error === 'no-speech') {
+                console.log('No speech detected, continuing to listen...');
+                // This is normal, recognition continues
+            } else if (event.error === 'network') {
+                console.error('Network error occurred during speech recognition');
+            } else if (event.error === 'aborted') {
+                console.log('Speech recognition was aborted');
+            } else {
+                console.log('Other speech recognition error:', event.error);
+            }
         };
 
-        recognition.start();
+        recognition.onend = () => {
+            console.log('Speech recognition ended');
+            // Auto-restart if Answerly is still active
+            if (answerlyActive && recognition) {
+                console.log('Auto-restarting speech recognition...');
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.error('Failed to restart recognition:', error);
+                }
+            }
+        };
+
+        try {
+            recognition.start();
+            console.log('Speech recognition started - microphone permission should be requested');
+        } catch (error) {
+            console.error('Failed to start speech recognition:', error);
+            alert('Failed to start speech recognition. Please make sure you are using Chrome or Edge browser.');
+            stopAnswerly();
+        }
     } else {
         alert('Speech recognition is not supported in your browser. Please use Chrome or Edge.');
         stopAnswerly();
@@ -1412,6 +1475,8 @@ async function stopAnswerly() {
 }
 
 async function detectAndAnswerQuestions(text) {
+    console.log('detectAndAnswerQuestions called with:', text);
+
     // Comprehensive question detection - trigger on question words and patterns
     const questionWords = [
         'how', 'what', 'when', 'where', 'why', 'who',
@@ -1421,6 +1486,7 @@ async function detectAndAnswerQuestions(text) {
     ];
 
     const sentences = text.toLowerCase().split(/[.!?]+/);
+    console.log('Split into sentences:', sentences);
 
     for (const sentence of sentences) {
         const trimmedSentence = sentence.trim();
@@ -1440,6 +1506,14 @@ async function detectAndAnswerQuestions(text) {
         // Consider it a question if it meets any criteria and is substantial
         const isQuestion = (startsWithQuestionWord || hasQuestionMark || hasAuxiliaryPattern) && trimmedSentence.length > 5;
 
+        console.log('Question check:', {
+            sentence: trimmedSentence,
+            startsWithQuestionWord,
+            hasQuestionMark,
+            hasAuxiliaryPattern,
+            isQuestion
+        });
+
         if (isQuestion) {
             // Check if we've already asked this question (prevent duplicates)
             const alreadyAsked = meetingQuestions.some(q =>
@@ -1447,11 +1521,11 @@ async function detectAndAnswerQuestions(text) {
             );
 
             if (!alreadyAsked) {
-                console.log('Detected question:', trimmedSentence);
+                console.log('✅ Detected question:', trimmedSentence);
                 // Generate answer from knowledge base
                 await generateAnswer(trimmedSentence);
             } else {
-                console.log('Question already asked, skipping:', trimmedSentence);
+                console.log('⚠️ Question already asked, skipping:', trimmedSentence);
             }
         }
     }
@@ -1459,11 +1533,14 @@ async function detectAndAnswerQuestions(text) {
 
 async function generateAnswer(question) {
     const responsesDiv = document.getElementById('answerly-responses');
-    const popupBody = document.getElementById('answerly-popup-body');
+    const popupConversation = document.getElementById('answerly-popup-conversation');
+
+    console.log('generateAnswer called for:', question);
+    console.log('popupConversation element:', popupConversation ? 'Found' : 'NOT FOUND');
 
     // Clear initial text in popup
-    if (popupBody && popupBody.querySelector('.conversation-flow-text')) {
-        popupBody.innerHTML = '';
+    if (popupConversation && popupConversation.querySelector('.conversation-flow-text')) {
+        popupConversation.innerHTML = '';
     }
 
     // Clear "No questions" message if present in modal
@@ -1494,14 +1571,24 @@ async function generateAnswer(question) {
 
     // Add question to popup
     let popupQA = null;
-    if (popupBody) {
+    if (popupConversation) {
+        // Remove live transcript element if it exists (we're now showing Q&A)
+        const liveTranscript = popupConversation.querySelector('.live-transcript');
+        if (liveTranscript) {
+            liveTranscript.remove();
+        }
+
         popupQA = document.createElement('div');
         popupQA.className = 'popup-qa-item';
+        popupQA.style.cssText = 'margin-bottom: 12px; padding: 12px; background: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 4px;';
         popupQA.innerHTML = `
-            <div class="popup-question">❓ ${question}</div>
-            <div class="popup-answer">💭 Searching...</div>
+            <div style="font-weight: 600; color: #1e40af; margin-bottom: 4px;">❓ ${question}</div>
+            <div style="color: #475569;">💭 Searching...</div>
         `;
-        popupBody.insertBefore(popupQA, popupBody.firstChild);
+        popupConversation.insertBefore(popupQA, popupConversation.firstChild);
+        console.log('Added Q&A to popup');
+    } else {
+        console.warn('popupConversation element not found!');
     }
 
     // Generate answer from knowledge base
@@ -1529,14 +1616,15 @@ async function generateAnswer(question) {
         // Update popup
         if (popupQA) {
             popupQA.innerHTML = `
-                <div class="popup-question">${answered ? '✅' : '❌'} ${question}</div>
-                <div class="popup-answer">${answered ? answer : '<strong style="color: #dc3545;">Not found</strong> - ' + answer}</div>
+                <div style="font-weight: 600; color: ${answered ? '#1e40af' : '#dc3545'}; margin-bottom: 4px;">${answered ? '✅' : '❌'} ${question}</div>
+                <div style="color: #475569; font-size: 14px; line-height: 1.6;">${answered ? answer : '<strong style="color: #dc3545;">Not found</strong> - ' + answer}</div>
             `;
+            console.log('Updated popup Q&A with answer');
         }
 
         // Auto-scroll popup to top
-        if (popupBody) {
-            popupBody.scrollTop = 0;
+        if (popupConversation) {
+            popupConversation.scrollTop = 0;
         }
 
         // Save question to meeting notes
@@ -2899,9 +2987,21 @@ function loadMeetingsHistory() {
 
 // Answerly Popup Functions
 function showAnswerlyModal() {
+    console.log('showAnswerlyModal called');
+
     // Show the popup in bottom right corner
     const popup = document.getElementById('answerly-listening-popup');
     popup.style.display = 'block';
+    console.log('Popup display set to block');
+
+    // Clear the initial placeholder message in popup and add initial state
+    const popupConversationDiv = document.getElementById('answerly-popup-conversation');
+    if (popupConversationDiv) {
+        popupConversationDiv.innerHTML = '<div class="live-transcript" style="padding: 12px; background: #f8fafc; border-left: 3px solid #10b981; border-radius: 4px; margin-bottom: 12px; font-style: italic; color: #666;">Waiting for speech...</div>';
+        console.log('Popup conversation div initialized');
+    } else {
+        console.error('answerly-popup-conversation not found!');
+    }
 
     // Start the timer
     answerlyStartTime = Date.now();
@@ -2930,7 +3030,16 @@ function closeAnswerlyPopup() {
     }
 
     // Reset timer display
-    document.getElementById('answerly-timer').textContent = '00:00';
+    const timerEl = document.getElementById('answerly-timer');
+    if (timerEl) {
+        timerEl.textContent = '00:00';
+    }
+
+    // Reset popup conversation display
+    const popupConversationDiv = document.getElementById('answerly-popup-conversation');
+    if (popupConversationDiv) {
+        popupConversationDiv.innerHTML = '<p style="font-style: italic; color: #999;">Listening to your conversation...</p>';
+    }
 
     // Reset meeting data
     answerlyStartTime = null;
@@ -3070,13 +3179,25 @@ async function searchAnswerlyDocuments(question) {
 
 function displayAnswerlyResponse(question, answer) {
     const conversationDiv = document.getElementById('answerly-popup-conversation');
-    const responseHtml = `
-        <div style="margin-bottom: 16px; padding: 12px; background: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 4px;">
-            <div style="font-weight: 600; color: #1e40af; margin-bottom: 4px;">Q: ${question}</div>
-            <div style="color: #475569;">A: ${answer}</div>
-        </div>
+    if (!conversationDiv) return;
+
+    // Create Q&A element
+    const qaDiv = document.createElement('div');
+    qaDiv.style.cssText = 'margin-bottom: 16px; padding: 12px; background: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 4px;';
+    qaDiv.innerHTML = `
+        <div style="font-weight: 600; color: #1e40af; margin-bottom: 4px;">Q: ${question}</div>
+        <div style="color: #475569;">A: ${answer}</div>
     `;
-    conversationDiv.innerHTML = responseHtml + conversationDiv.innerHTML;
+
+    // Insert after live transcript (if it exists) or at the beginning
+    const liveTranscriptEl = conversationDiv.querySelector('.live-transcript');
+    if (liveTranscriptEl) {
+        // Insert right after live transcript
+        liveTranscriptEl.parentNode.insertBefore(qaDiv, liveTranscriptEl.nextSibling);
+    } else {
+        // Insert at the beginning
+        conversationDiv.insertBefore(qaDiv, conversationDiv.firstChild);
+    }
 }
 
 // Onboarding card toggle functions
